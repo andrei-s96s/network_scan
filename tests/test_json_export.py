@@ -113,6 +113,22 @@ class TestJSONExport(unittest.TestCase):
         self.assertEqual(host_data["ports"]["3389"]["service"], "RDP")
         self.assertEqual(host_data["ports"]["3389"]["response"], "RDP")
         self.assertEqual(host_data["ports"]["3389"]["status"], "open")
+    
+    def test_postgresql_port_detection(self):
+        """Тест обнаружения PostgreSQL порта"""
+        json_data = []
+        results = {5432: "PostgreSQL"}
+        
+        save_result_json("192.168.1.101", results, json_data, 0)
+        
+        self.assertEqual(len(json_data), 1)
+        host_data = json_data[0]
+        
+        self.assertEqual(host_data["ip"], "192.168.1.101")
+        self.assertIn("5432", host_data["ports"])
+        self.assertEqual(host_data["ports"]["5432"]["service"], "PostgreSQL")
+        self.assertEqual(host_data["ports"]["5432"]["response"], "PostgreSQL")
+        self.assertEqual(host_data["ports"]["5432"]["status"], "open")
 
 
 if __name__ == '__main__':
