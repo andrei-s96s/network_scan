@@ -380,6 +380,70 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
             font-size: 0.8em;
             font-weight: bold;
         }}
+        .screenshots-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }}
+        .screenshot-item {{
+            position: relative;
+            cursor: pointer;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }}
+        .screenshot-item:hover {{
+            transform: scale(1.05);
+        }}
+        .screenshot-item img {{
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            display: block;
+        }}
+        .screenshot-label {{
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px;
+            font-size: 0.8em;
+            text-align: center;
+        }}
+        .modal {{
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+        }}
+        .modal-content {{
+            margin: auto;
+            display: block;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90%;
+            object-fit: contain;
+        }}
+        .close {{
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }}
+        .close:hover {{
+            color: #bbb;
+        }}
         .footer {{
             background: #f8f9fa;
             padding: 20px;
@@ -433,6 +497,44 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
             Отчет сгенерирован автоматически | Сетевой сканер v1.0
         </div>
     </div>
+    
+    <!-- Модальное окно для скриншотов -->
+    <div id="screenshotModal" class="modal">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modalImage">
+    </div>
+    
+    <script>
+        // Модальное окно для скриншотов
+        var modal = document.getElementById("screenshotModal");
+        var modalImg = document.getElementById("modalImage");
+        var span = document.getElementsByClassName("close")[0];
+        
+        // Открытие модального окна
+        function openModal(imgSrc) {{
+            modal.style.display = "block";
+            modalImg.src = imgSrc;
+        }}
+        
+        // Закрытие модального окна
+        span.onclick = function() {{
+            modal.style.display = "none";
+        }}
+        
+        // Закрытие по клику вне изображения
+        modal.onclick = function(e) {{
+            if (e.target === modal) {{
+                modal.style.display = "none";
+            }}
+        }}
+        
+        // Закрытие по клавише Escape
+        document.addEventListener('keydown', function(e) {{
+            if (e.key === 'Escape' && modal.style.display === 'block') {{
+                modal.style.display = "none";
+            }}
+        }});
+    </script>
 </body>
 </html>
 """
@@ -480,9 +582,24 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
                 if host["screenshots"] > 0:
                     host_html += f"""
                     <div class="screenshots-info">
-                        📸 Скриншоты сохранены в папке ./web/{host['ip']}/
+                        📸 Скриншоты ({host['screenshots']} шт.)
                     </div>
+                    <div class="screenshots-grid">
                     """
+                    
+                    # Добавляем скриншоты для портов 80 и 443
+                    for port in [80, 443]:
+                        screenshot_path = f"./web/{host['ip']}/{port}.png"
+                        if os.path.exists(screenshot_path):
+                            protocol = "HTTPS" if port == 443 else "HTTP"
+                            host_html += f"""
+                            <div class="screenshot-item" onclick="openModal('{screenshot_path}')">
+                                <img src="{screenshot_path}" alt="{protocol} скриншот">
+                                <div class="screenshot-label">{protocol} (порт {port})</div>
+                            </div>
+                            """
+                    
+                    host_html += "</div>"
                 
                 host_html += "</div>"
                 hosts_html += host_html
