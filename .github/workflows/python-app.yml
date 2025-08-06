@@ -58,7 +58,7 @@ jobs:
         pytest tests/test_basic.py tests/test_scanner.py -v --tb=no || echo "Tests completed"
     
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-results
         path: |
@@ -91,7 +91,7 @@ jobs:
         safety check --json --output safety-report.json || true
     
     - name: Upload security reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: security-reports
         path: |
@@ -144,7 +144,7 @@ jobs:
         tar -czf dist/network-scanner.tar.gz dist/
     
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: network-scanner-build
         path: dist/ 
