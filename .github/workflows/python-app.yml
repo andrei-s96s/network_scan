@@ -141,7 +141,7 @@ jobs:
         cp config.yaml dist/
         cp requirements.txt dist/
         cp README.md dist/
-        tar -czf dist/network-scanner.tar.gz dist/
+        cd dist && tar -czf network-scanner.tar.gz * && cd ..
     
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
