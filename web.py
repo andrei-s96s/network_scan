@@ -10,7 +10,7 @@ import sys
 import ipaddress
 import socket
 import logging
-import yaml
+# import yaml  # Убрано - больше не используется
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
@@ -65,16 +65,7 @@ class Config:
                 37778: b'HEAD / HTTP/1.0\r\n\r\n',  # Dahua cameras web interface
             }
 
-def load_config(config_file: str = "config.yaml") -> Config:
-    """Загружает конфигурацию из YAML файла"""
-    if os.path.exists(config_file):
-        try:
-            with open(config_file, 'r', encoding='utf-8') as f:
-                data = yaml.safe_load(f)
-                return Config(**data)
-        except Exception as e:
-            logging.warning(f"Не удалось загрузить конфигурацию из {config_file}: {e}")
-    
+def load_config() -> Config:
     return Config()
 
 def setup_logging(config: Config):

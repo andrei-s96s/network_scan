@@ -91,27 +91,11 @@ class TestConfigLoading(unittest.TestCase):
     
     def test_load_config_default(self):
         """Тест загрузки конфигурации по умолчанию"""
-        config = load_config("nonexistent.yaml")
+        config = load_config()
         self.assertIsInstance(config, Config)
         self.assertEqual(config.probe_timeout, 5)
-    
-    def test_load_config_from_file(self):
-        """Тест загрузки конфигурации из файла"""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
-            f.write("""
-probe_timeout: 10
-web_timeout: 20
-log_level: "DEBUG"
-""")
-            config_file = f.name
-        
-        try:
-            config = load_config(config_file)
-            self.assertEqual(config.probe_timeout, 10)
-            self.assertEqual(config.web_timeout, 20)
-            self.assertEqual(config.log_level, "DEBUG")
-        finally:
-            os.unlink(config_file)
+        self.assertEqual(config.web_timeout, 10)
+        self.assertEqual(config.log_level, "INFO")
 
 
 class TestOSDetection(unittest.TestCase):

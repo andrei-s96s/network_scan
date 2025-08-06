@@ -89,7 +89,6 @@ jobs:
       run: |
         mkdir -p dist
         cp web.py dist/
-        cp config.yaml dist/
         cp requirements.txt dist/
         cp README.md dist/
         cd dist && tar -czf network-scanner.tar.gz * && cd ..
