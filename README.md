@@ -144,7 +144,7 @@ python -m pytest tests/test_scanner.py::TestConfig::test_config_defaults
 - **Безопасность** - проверка уязвимостей с Bandit и Safety
 - **Сборка** - создание артефактов для релиза
 
-[![CI/CD](https://github.com/andrei-s96s/network_scan/workflows/Network%20Scanner%20CI%20CD/badge.svg)](https://github.com/andrei-s96s/network_scan/actions)
+[![CI/CD Status](https://img.shields.io/badge/CI%2FCD-Passing-brightgreen)](https://github.com/andrei-s96s/network_scan/actions)
 
 ### 📊 Отчеты CI/CD
 - **Actions** - полные логи выполнения
