@@ -64,11 +64,6 @@ def main():
         action="store_true",
         help="Не создавать JSON и HTML отчеты (только текстовый)",
     )
-    parser.add_argument(
-        "--skip-sip",
-        action="store_true",
-        help="Пропускать сканирование SIP портов (5060, 5061)",
-    )
 
     parser.add_argument("--config", type=Path, help="Путь к файлу конфигурации")
 
@@ -94,16 +89,11 @@ def main():
         # Применяем опции командной строки
         if args.verbose:
             config.log_level = "DEBUG"
-        if args.skip_sip:
-            config.skip_sip_ports = True
         config.output_dir = args.output_dir
 
         # Настройка логирования
         config.setup_logging()
         logger = logging.getLogger(__name__)
-        
-        if args.skip_sip:
-            logger.info("🔇 SIP порты (5060, 5061) отключены")
 
         logger.info("🚀 Запуск оптимизированного сетевого сканера")
         logger.info(f"Сеть: {network}")

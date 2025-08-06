@@ -23,22 +23,21 @@ class TestConfig(unittest.TestCase):
     def test_config_defaults(self):
         """Тест значений по умолчанию"""
         config = ScannerConfig()
+        
         self.assertEqual(config.probe_timeout, 5)
         self.assertEqual(config.web_timeout, 10)
         self.assertEqual(config.viewport_width, 1280)
         self.assertEqual(config.viewport_height, 720)
-        self.assertIsNotNone(config.ports_tcp_probe)
-        self.assertIn(80, config.ports_tcp_probe)
-        self.assertIn(443, config.ports_tcp_probe)
-
-        # Проверяем порты для IP устройств
-        self.assertIn(5060, config.ports_tcp_probe)  # SIP
-        self.assertIn(5061, config.ports_tcp_probe)  # SIP-TLS
-        self.assertIn(10000, config.ports_tcp_probe)  # IP Phone Web
-        self.assertIn(554, config.ports_tcp_probe)  # RTSP
-        self.assertIn(8000, config.ports_tcp_probe)  # IP Camera Web
-        self.assertIn(37777, config.ports_tcp_probe)  # Dahua Camera
-        self.assertIn(37778, config.ports_tcp_probe)  # Dahua Camera
+        self.assertEqual(config.max_browsers, 3)
+        self.assertEqual(config.log_level, "INFO")
+        self.assertEqual(config.log_file, "scanner.log")
+        
+        # Проверяем наличие основных портов
+        self.assertIn(22, config.ports_tcp_probe)  # SSH
+        self.assertIn(80, config.ports_tcp_probe)  # HTTP
+        self.assertIn(443, config.ports_tcp_probe)  # HTTPS
+        self.assertIn(3389, config.ports_tcp_probe)  # RDP
+        self.assertIn(8080, config.ports_tcp_probe)  # HTTP-Proxy
 
     def test_config_custom(self):
         """Тест пользовательской конфигурации"""

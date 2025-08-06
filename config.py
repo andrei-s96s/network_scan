@@ -16,7 +16,6 @@ class ScannerConfig:
     # TCP сканирование
     probe_timeout: int = 5
     web_timeout: int = 10
-    skip_sip_ports: bool = False  # Пропускать сканирование SIP портов (5060, 5061)
 
     # Веб-скриншоты
     viewport_width: int = 1280
@@ -47,8 +46,6 @@ class ScannerConfig:
             5432: b"\x00\x00\x00\x08\x04\xd2\x16\x2f",  # PostgreSQL startup message
             161: b"",  # SNMP
             # IP Phones
-            5060: b"OPTIONS sip:test@test.com SIP/2.0\r\nVia: SIP/2.0/UDP test.com\r\nFrom: <sip:test@test.com>\r\nTo: <sip:test@test.com>\r\nCall-ID: test@test.com\r\nCSeq: 1 OPTIONS\r\n\r\n",
-            5061: b"OPTIONS sip:test@test.com SIP/2.0\r\nVia: SIP/2.0/TLS test.com\r\nFrom: <sip:test@test.com>\r\nTo: <sip:test@test.com>\r\nCall-ID: test@test.com\r\nCSeq: 1 OPTIONS\r\n\r\n",
             10000: b"HEAD / HTTP/1.0\r\n\r\n",  # IP Phone web interface
             8080: b"HEAD / HTTP/1.0\r\n\r\n",  # Alternative web interface
             # IP Cameras

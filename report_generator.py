@@ -414,6 +414,57 @@ class ReportGenerator:
             font-size: 0.9em;
             margin-top: 5px;
         }}
+        .modal {{
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+        }}
+        .modal-content {{
+            margin: auto;
+            display: block;
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90%;
+            object-fit: contain;
+        }}
+        .modal-close {{
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }}
+        .modal-close:hover,
+        .modal-close:focus {{
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }}
+        .screenshot-image {{
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }}
+        .screenshot-image:hover {{
+            transform: scale(1.05);
+        }}
+        #modalCaption {{
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 700px;
+            text-align: center;
+            color: #ccc;
+            padding: 10px 0;
+            height: 150px;
+        }}
         .no-ports {{
             text-align: center;
             color: #888;
@@ -523,7 +574,7 @@ class ReportGenerator:
                 for screenshot in host.get("screenshot_files", []):
                     html += f"""
                     <div class="screenshot-item">
-                        <img src="screenshots/{screenshot['file']}" alt="Скриншот порта {screenshot['port']}" class="screenshot-image">
+                        <img src="screenshots/{screenshot['file']}" alt="Скриншот порта {screenshot['port']}" class="screenshot-image" onclick="openModal(this.src, 'Порт: {screenshot['port']} - Сервис: {screenshot['service']}')">
                         <div class="screenshot-info">
                             <div class="screenshot-port">Порт: {screenshot['port']}</div>
                             <div class="screenshot-service">Сервис: {screenshot['service']}</div>
@@ -538,6 +589,43 @@ class ReportGenerator:
 
         html += """
         </div>
+        
+        <!-- Модальное окно для увеличения изображений -->
+        <div id="imageModal" class="modal">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <img class="modal-content" id="modalImage">
+            <div id="modalCaption"></div>
+        </div>
+        
+        <script>
+        function openModal(imgSrc, caption) {
+            var modal = document.getElementById("imageModal");
+            var modalImg = document.getElementById("modalImage");
+            var captionText = document.getElementById("modalCaption");
+            
+            modal.style.display = "block";
+            modalImg.src = imgSrc;
+            captionText.innerHTML = caption;
+        }
+        
+        function closeModal() {
+            document.getElementById("imageModal").style.display = "none";
+        }
+        
+        // Закрытие модального окна при клике вне изображения
+        document.getElementById("imageModal").onclick = function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        }
+        
+        // Закрытие модального окна по клавише Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+        </script>
         
         <div class="footer">
             <p>📊 Отчет сгенерирован автоматически | 🔒 Только для внутреннего использования</p>
