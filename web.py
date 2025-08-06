@@ -1013,20 +1013,30 @@ def screenshot_ip(ip: str, config: Config) -> int:
     ok = 0
     try:
         with BrowserManager(config) as browser_mgr:
-            for port in (80, 443):
-                protocol = 'https' if port == 443 else 'http'
+            # Список всех веб-портов для скриншотов
+            web_ports = {
+                80: 'http',      # HTTP
+                443: 'https',    # HTTPS
+                8080: 'http',    # Alternative Web
+                10000: 'http',   # IP Phone Web
+                8000: 'http',    # IP Camera Web
+                37777: 'http',   # Dahua Camera Web
+                37778: 'http',   # Dahua Camera Web
+            }
+            
+            for port, protocol in web_ports.items():
                 try:
                     page = browser_mgr.context.new_page()
-                    page.goto(f"{protocol}://{ip}", timeout=config.web_timeout * 1000)
+                    page.goto(f"{protocol}://{ip}:{port}", timeout=config.web_timeout * 1000)
                     
                     folder = os.path.join("web", str(ip))
                     os.makedirs(folder, exist_ok=True)
                     
                     page.screenshot(path=os.path.join(folder, f"{port}.png"), full_page=True)
-                    logging.info(f"Скриншот {protocol}://{ip} сохранен")
+                    logging.info(f"Скриншот {protocol}://{ip}:{port} сохранен")
                     ok += 1
                 except Exception as e:
-                    logging.debug(f"Не удалось сделать скриншот {protocol}://{ip}: {e}")
+                    logging.debug(f"Не удалось сделать скриншот {protocol}://{ip}:{port}: {e}")
                 finally:
                     page.close()
     except Exception as e:
@@ -1061,7 +1071,7 @@ def scan_host(ip: str, result_file: str, config: Config, json_data: List[Dict] =
         save_result(ip, tcp_results, result_file)
         
         # Делаем веб-скриншоты только если есть открытые веб-порты
-        web_ports = {80, 443}
+        web_ports = {80, 443, 8080, 10000, 8000, 37777, 37778}
         if any(port in tcp_results for port in web_ports):
             web_ok = screenshot_ip(ip, config)
         else:
