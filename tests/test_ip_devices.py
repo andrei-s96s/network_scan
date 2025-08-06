@@ -98,6 +98,24 @@ class TestIPDevices(unittest.TestCase):
         rtsp_probe = config.ports_tcp_probe[554].decode('utf-8', errors='ignore')
         self.assertIn("OPTIONS", rtsp_probe)
         self.assertIn("RTSP/1.0", rtsp_probe)
+    
+    def test_improved_port_detection(self):
+        """Тест улучшенного определения портов"""
+        config = Config()
+        
+        # Проверяем, что PostgreSQL порт имеет правильный probe
+        self.assertIn(5432, config.ports_tcp_probe)
+        self.assertNotEqual(config.ports_tcp_probe[5432], b'')
+        
+        # Проверяем, что RDP порт имеет правильный probe (хотя он обрабатывается отдельно)
+        self.assertIn(3389, config.ports_tcp_probe)
+        
+        # Проверяем, что SIP и RTSP probes содержат правильные протоколы
+        sip_probe = config.ports_tcp_probe[5060].decode('utf-8', errors='ignore')
+        rtsp_probe = config.ports_tcp_probe[554].decode('utf-8', errors='ignore')
+        
+        self.assertIn("SIP/2.0", sip_probe)
+        self.assertIn("RTSP/1.0", rtsp_probe)
 
 if __name__ == "__main__":
     unittest.main()

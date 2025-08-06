@@ -207,10 +207,54 @@ def probe_port(ip: str, port: int, config: Config) -> Optional[str]:
             
             # Специальная обработка для разных типов портов
             if port == 3389:  # RDP
-                return "RDP"
+                # RDP требует специальной обработки - отправляем RDP connection request
+                try:
+                    # Простой RDP connection request
+                    rdp_request = b'\x03\x00\x00\x13\x0e\xe0\x00\x00\x00\x00\x00\x01\x00\x08\x00\x03\x00\x00\x00'
+                    s.send(rdp_request)
+                    s.settimeout(config.probe_timeout * 2)
+                    try:
+                        response = s.recv(256)
+                        if response:
+                            # Проверяем, что это RDP ответ
+                            if response.startswith(b'\x03\x00'):
+                                return "RDP"
+                            else:
+                                # Если получили ответ, но это не RDP - порт открыт, но не RDP
+                                return "open"
+                        else:
+                            # Нет ответа на RDP probe - порт открыт, но не RDP
+                            return "open"
+                    except socket.timeout:
+                        # Таймаут на RDP probe - порт открыт, но не RDP
+                        return "open"
+                except Exception:
+                    # Если не удалось отправить RDP probe - порт открыт, но не RDP
+                    return "open"
             elif port == 5432:  # PostgreSQL
-                # PostgreSQL может не отвечать на пустой запрос
-                return "PostgreSQL"
+                # Отправляем PostgreSQL startup message
+                probe = config.ports_tcp_probe.get(port, b'')
+                if probe:
+                    s.send(probe)
+                    s.settimeout(config.probe_timeout * 2)
+                    try:
+                        response = s.recv(256)
+                        if response:
+                            # Проверяем, что это PostgreSQL ответ
+                            response_text = response.decode('utf-8', errors='ignore').lower()
+                            if 'postgresql' in response_text or 'postgres' in response_text:
+                                return "PostgreSQL"
+                            else:
+                                # Если получили ответ, но это не PostgreSQL - порт открыт, но не PostgreSQL
+                                return "open"
+                        else:
+                            # Нет ответа на PostgreSQL probe - порт открыт, но не PostgreSQL
+                            return "open"
+                    except socket.timeout:
+                        # Таймаут на PostgreSQL probe - порт открыт, но не PostgreSQL
+                        return "open"
+                else:
+                    return "PostgreSQL"
             elif port == 1433:  # MSSQL
                 return "MSSQL"
             elif port == 3306:  # MySQL
@@ -222,15 +266,57 @@ def probe_port(ip: str, port: int, config: Config) -> Optional[str]:
             elif port == 161:  # SNMP
                 return "SNMP"
             elif port in (5060, 5061):  # SIP
-                # SIP порты обрабатываются в общем блоке ниже
-                pass
+                # Отправляем SIP OPTIONS probe
+                probe = config.ports_tcp_probe.get(port, b'')
+                if probe:
+                    s.send(probe)
+                    s.settimeout(config.probe_timeout * 2)
+                    try:
+                        response = s.recv(256)
+                        if response:
+                            # Проверяем, что это SIP ответ
+                            response_text = response.decode('utf-8', errors='ignore').lower()
+                            if 'sip/2.0' in response_text or 'sip' in response_text:
+                                return "SIP"
+                            else:
+                                # Если получили ответ, но это не SIP - порт открыт, но не SIP сервис
+                                return "open"
+                        else:
+                            # Нет ответа на SIP probe - порт открыт, но не SIP
+                            return "open"
+                    except socket.timeout:
+                        # Таймаут на SIP probe - порт открыт, но не SIP
+                        return "open"
+                else:
+                    return "open"
             elif port == 10000:  # IP Phone web interface
                 return "IP Phone"
             elif port == 8080:  # Alternative web interface
                 return "Alternative Web"
             elif port == 554:  # RTSP
-                # RTSP порт обрабатывается в общем блоке ниже
-                pass
+                # Отправляем RTSP OPTIONS probe
+                probe = config.ports_tcp_probe.get(port, b'')
+                if probe:
+                    s.send(probe)
+                    s.settimeout(config.probe_timeout * 2)
+                    try:
+                        response = s.recv(256)
+                        if response:
+                            # Проверяем, что это RTSP ответ
+                            response_text = response.decode('utf-8', errors='ignore').lower()
+                            if 'rtsp/1.0' in response_text or 'rtsp' in response_text:
+                                return "RTSP"
+                            else:
+                                # Если получили ответ, но это не RTSP - порт открыт, но не RTSP сервис
+                                return "open"
+                        else:
+                            # Нет ответа на RTSP probe - порт открыт, но не RTSP
+                            return "open"
+                    except socket.timeout:
+                        # Таймаут на RTSP probe - порт открыт, но не RTSP
+                        return "open"
+                else:
+                    return "open"
             elif port == 8000:  # IP Camera web interface
                 return "IP Camera"
             elif port in (37777, 37778):  # Dahua cameras
