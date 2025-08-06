@@ -16,6 +16,7 @@ class ScannerConfig:
     # TCP сканирование
     probe_timeout: int = 5
     web_timeout: int = 10
+    skip_sip_ports: bool = False  # Пропускать сканирование SIP портов (5060, 5061)
 
     # Веб-скриншоты
     viewport_width: int = 1280

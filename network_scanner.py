@@ -158,12 +158,17 @@ class NetworkScanner:
                     elif port == 5432:  # PostgreSQL
                         if not response.startswith(b"\x4e"):  # N - Authentication
                             return None
-                    elif port in [5060, 5061]:  # SIP - менее строгая валидация
-                        # Для SIP принимаем любой ответ, так как не все устройства отвечают стандартно
-                        if response:
+                    elif port in [5060, 5061]:  # SIP - строгая валидация
+                        # Для SIP требуем хотя бы какой-то ответ
+                        # Если устройство принимает соединение, но не отвечает на SIP OPTIONS,
+                        # то это не SIP сервер
+                        if response and len(response) > 0:
                             return response.decode("utf-8", errors="ignore").strip()
                         else:
-                            return "open"
+                            # Если нет ответа на SIP OPTIONS, считаем порт закрытым
+                            # Это предотвращает ложные срабатывания на устройствах, которые
+                            # принимают TCP соединения, но не являются SIP серверами
+                            return None
                     elif port == 554:  # RTSP
                         if b"RTSP/1.0" not in response:
                             return None
@@ -193,9 +198,17 @@ class NetworkScanner:
         with ThreadPoolExecutor(
             max_workers=min(20, len(self.config.ports_tcp_probe))
         ) as executor:
+            # Фильтруем порты для сканирования
+            ports_to_scan = {}
+            for port, probe_data in self.config.ports_tcp_probe.items():
+                if self.config.skip_sip_ports and port in [5060, 5061]:
+                    self.logger.debug(f"Пропускаем SIP порт {port}")
+                    continue
+                ports_to_scan[port] = probe_data
+            
             future_to_port = {
                 executor.submit(self.probe_port, ip, port): port
-                for port in self.config.ports_tcp_probe.keys()
+                for port in ports_to_scan.keys()
             }
 
             for future in as_completed(future_to_port):
@@ -207,6 +220,17 @@ class NetworkScanner:
                         # Определяем ОС по первому найденному баннеру
                         if detected_os is None and result != "open":
                             detected_os = self.detect_os_from_banner(result, port)
+                    # Добавляем отладочную информацию для порта 5060
+                    if port == 5060:
+                        self.logger.info(f"Порт 5060 на {ip}: результат = {result}")
+                        if result is None:
+                            self.logger.debug(f"Порт 5060 на {ip}: соединение не установлено или нет ответа на SIP OPTIONS")
+                        elif result == "open":
+                            self.logger.debug(f"Порт 5060 на {ip}: соединение установлено, но нет ответа на SIP OPTIONS")
+                        else:
+                            self.logger.debug(f"Порт 5060 на {ip}: получен ответ: {result[:100]}...")
+                    # Добавляем отладочную информацию для всех портов в DEBUG режиме
+                    self.logger.debug(f"Порт {port} на {ip}: результат = {result}")
                 except Exception as e:
                     self.logger.error(
                         f"Ошибка при сканировании порта {port} на {ip}: {e}"
