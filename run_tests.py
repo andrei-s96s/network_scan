@@ -7,12 +7,14 @@ import unittest
 import sys
 import os
 
-# Добавляем текущую директорию в путь
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
 def run_tests():
-    """Запускает все тесты"""
-    # Находим все тестовые файлы
+    """Запуск всех тестов"""
+    print("🧪 Запуск тестов...")
+    
+    # Добавляем текущую директорию в путь
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    
+    # Загружаем тесты из test_main.py
     loader = unittest.TestLoader()
     start_dir = 'tests'
     suite = loader.discover(start_dir, pattern='test_*.py')
@@ -21,9 +23,13 @@ def run_tests():
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     
-    # Возвращаем код выхода
-    return 0 if result.wasSuccessful() else 1
+    if result.wasSuccessful():
+        print("✅ Все тесты прошли успешно!")
+        return True
+    else:
+        print("❌ Некоторые тесты не прошли")
+        return False
 
-if __name__ == '__main__':
-    exit_code = run_tests()
-    sys.exit(exit_code) 
+if __name__ == "__main__":
+    success = run_tests()
+    sys.exit(0 if success else 1) 
