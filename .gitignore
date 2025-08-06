@@ -42,6 +42,7 @@ logs/
 # Scanner results
 scan-*.txt
 scan-*.json
+scan-*.html
 web/
 screenshots/
 

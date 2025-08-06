@@ -214,6 +214,305 @@ def save_json_report(json_data: List[Dict], network: str, output_file: str):
     except Exception as e:
         logging.error(f"Ошибка при сохранении JSON отчета: {e}")
 
+def save_html_report(json_data: List[Dict], network: str, output_file: str):
+    """Создает красивый HTML отчет на основе JSON данных"""
+    from datetime import datetime
+    
+    html_template = """
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчет сканирования сети {network}</title>
+    <style>
+        body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }}
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }}
+        .header {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }}
+        .header h1 {{
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }}
+        .header .subtitle {{
+            margin-top: 10px;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }}
+        .stats {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }}
+        .stat-card {{
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }}
+        .stat-number {{
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }}
+        .stat-label {{
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }}
+        .hosts-section {{
+            padding: 30px;
+        }}
+        .host-card {{
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }}
+        .host-header {{
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }}
+        .host-ip {{
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }}
+        .host-summary {{
+            display: flex;
+            gap: 15px;
+            font-size: 0.9em;
+            color: #666;
+        }}
+        .port-item {{
+            padding: 10px 20px;
+            border-bottom: 1px solid #f1f3f4;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }}
+        .port-item:last-child {{
+            border-bottom: none;
+        }}
+        .port-info {{
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }}
+        .port-number {{
+            background: #667eea;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }}
+        .service-name {{
+            font-weight: bold;
+            color: #333;
+        }}
+        .port-response {{
+            color: #666;
+            font-family: monospace;
+            font-size: 0.9em;
+        }}
+        .screenshots-info {{
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 10px 20px;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+        .no-hosts {{
+            text-align: center;
+            padding: 50px;
+            color: #666;
+            font-style: italic;
+        }}
+        .services-summary {{
+            background: #f8f9fa;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 10px;
+        }}
+        .services-list {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }}
+        .service-tag {{
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }}
+        .footer {{
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Отчет сканирования сети</h1>
+            <div class="subtitle">
+                Сеть: {network} | Время: {scan_time}
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">{total_hosts}</div>
+                <div class="stat-label">Всего хостов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{hosts_with_ports}</div>
+                <div class="stat-label">Хостов с портами</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{total_ports}</div>
+                <div class="stat-label">Открытых портов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{web_services}</div>
+                <div class="stat-label">Веб-сервисов</div>
+            </div>
+        </div>
+        
+        <div class="hosts-section">
+            <h2>📋 Результаты сканирования</h2>
+            {hosts_html}
+        </div>
+        
+        <div class="services-summary">
+            <h3>🔧 Обнаруженные сервисы</h3>
+            <div class="services-list">
+                {services_html}
+            </div>
+        </div>
+        
+        <div class="footer">
+            Отчет сгенерирован автоматически | Сетевой сканер v1.0
+        </div>
+    </div>
+</body>
+</html>
+"""
+    
+    # Подготавливаем данные для отчета
+    total_hosts = len(json_data)
+    hosts_with_ports = len([h for h in json_data if h["ports"]])
+    total_ports = sum(len(h["ports"]) for h in json_data)
+    web_services = len([h for h in json_data if h["summary"]["web_ports"] > 0])
+    
+    # Собираем все уникальные сервисы
+    all_services = set()
+    for host in json_data:
+        for service in host["summary"]["services"]:
+            all_services.add(service)
+    
+    # Генерируем HTML для хостов
+    hosts_html = ""
+    if json_data:
+        for host in json_data:
+            if host["ports"]:
+                host_html = f"""
+                <div class="host-card">
+                    <div class="host-header">
+                        <div class="host-ip">🌐 {host['ip']}</div>
+                        <div class="host-summary">
+                            <span>📊 {host['summary']['total_ports']} портов</span>
+                            <span>🌍 {host['summary']['web_ports']} веб-портов</span>
+                            <span>📸 {host['screenshots']} скриншотов</span>
+                        </div>
+                    </div>
+                """
+                
+                for port_num, port_data in sorted(host["ports"].items()):
+                    host_html += f"""
+                    <div class="port-item">
+                        <div class="port-info">
+                            <span class="port-number">{port_num}</span>
+                            <span class="service-name">{port_data['service']}</span>
+                        </div>
+                        <div class="port-response">{port_data['response']}</div>
+                    </div>
+                    """
+                
+                if host["screenshots"] > 0:
+                    host_html += f"""
+                    <div class="screenshots-info">
+                        📸 Скриншоты сохранены в папке ./web/{host['ip']}/
+                    </div>
+                    """
+                
+                host_html += "</div>"
+                hosts_html += host_html
+    else:
+        hosts_html = '<div class="no-hosts">😔 Открытых портов не найдено</div>'
+    
+    # Генерируем HTML для сервисов
+    services_html = ""
+    for service in sorted(all_services):
+        services_html += f'<span class="service-tag">{service}</span>'
+    
+    # Заполняем шаблон
+    html_content = html_template.format(
+        network=network,
+        scan_time=datetime.now().strftime("%d.%m.%Y %H:%M:%S"),
+        total_hosts=total_hosts,
+        hosts_with_ports=hosts_with_ports,
+        total_ports=total_ports,
+        web_services=web_services,
+        hosts_html=hosts_html,
+        services_html=services_html
+    )
+    
+    try:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        logging.info(f"HTML отчет сохранен: {output_file}")
+    except Exception as e:
+        logging.error(f"Ошибка при сохранении HTML отчета: {e}")
+
 # ---------- web screenshot ----------
 class BrowserManager:
     """Менеджер браузеров для оптимизации ресурсов"""
@@ -339,6 +638,7 @@ def main():
 
     result_file = f"scan-{network_str.replace('/', '_')}.txt"
     json_file = f"scan-{network_str.replace('/', '_')}.json" if export_json else None
+    html_file = f"scan-{network_str.replace('/', '_')}.html" if export_json else None
     
     if os.path.exists(result_file):
         os.remove(result_file)
@@ -347,6 +647,10 @@ def main():
     if json_file and os.path.exists(json_file):
         os.remove(json_file)
         logging.info(f"Удален старый JSON файл: {json_file}")
+    
+    if html_file and os.path.exists(html_file):
+        os.remove(html_file)
+        logging.info(f"Удален старый HTML файл: {html_file}")
 
     hosts = list(network.hosts())
     logging.info(f"Начинаем сканирование {len(hosts)} хостов с {threads} потоками")
@@ -369,9 +673,10 @@ def main():
                     logging.error(f"Ошибка в потоке: {e}")
                     pbar.update(1)
 
-    # Сохраняем JSON отчет если нужно
+    # Сохраняем отчеты если нужно
     if export_json and json_data:
         save_json_report(json_data, network_str, json_file)
+        save_html_report(json_data, network_str, html_file)
 
     logging.info("Сканирование завершено")
     print("Готово.")
@@ -379,6 +684,7 @@ def main():
     print("TCP scan   →", result_file)
     if export_json:
         print("JSON отчет →", json_file)
+        print("HTML отчет →", html_file)
 
 if __name__ == "__main__":
     # Отключаем предупреждения
