@@ -135,6 +135,7 @@ class ReportGenerator:
                     screenshots_count.get(result.ip, 0) if screenshots_count else 0
                 ),
                 "detected_os": result.detected_os,
+                "screenshot_files": [],  # Добавляем список файлов скриншотов
             }
 
             for port, response in result.open_ports.items():
@@ -143,6 +144,17 @@ class ReportGenerator:
                     "service": service_name,
                     "response": response,
                 }
+                
+                # Проверяем, есть ли скриншот для этого порта
+                if port in {80, 443, 8080, 10000, 8000, 37777, 37778}:
+                    screenshot_file = f"{result.ip}_{port}.png"
+                    screenshot_path = network_dir / "screenshots" / screenshot_file
+                    if screenshot_path.exists():
+                        host_data["screenshot_files"].append({
+                            "port": port,
+                            "service": service_name,
+                            "file": screenshot_file
+                        })
 
             json_data.append(host_data)
 
@@ -220,7 +232,7 @@ class ReportGenerator:
         total_ports = sum(len(h["ports"]) for h in json_data)
         total_screenshots = sum(h["screenshots"] for h in json_data)
 
-        html = f"""<!DOCTYPE html>
+        html = """<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -354,6 +366,54 @@ class ReportGenerator:
             font-family: monospace;
             word-break: break-all;
         }}
+        .screenshots-section {{
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }}
+        .screenshots-title {{
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }}
+        .screenshots-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }}
+        .screenshot-item {{
+            background: #f8f9fa;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease;
+        }}
+        .screenshot-item:hover {{
+            transform: translateY(-5px);
+        }}
+        .screenshot-image {{
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-bottom: 1px solid #e0e0e0;
+        }}
+        .screenshot-info {{
+            padding: 15px;
+        }}
+        .screenshot-port {{
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1em;
+        }}
+        .screenshot-service {{
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }}
         .no-ports {{
             text-align: center;
             color: #888;
@@ -385,7 +445,7 @@ class ReportGenerator:
     <div class="container">
         <div class="header">
             <h1>🔍 Результаты сканирования</h1>
-            <p>Сеть: {network} | Время: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p>Сеть: {network} | Время: {datetime_now}</p>
         </div>
         
         <div class="stats">
@@ -399,15 +459,24 @@ class ReportGenerator:
             </div>
             <div class="stat-card">
                 <div class="stat-number">{total_ports}</div>
-                <div class="stat-label">{get_port_ending(total_ports)}</div>
+                <div class="stat-label">{port_ending}</div>
             </div>
             <div class="stat-card">
                 <div class="stat-number">{total_screenshots}</div>
-                <div class="stat-label">{get_screenshot_ending(total_screenshots)}</div>
+                <div class="stat-label">{screenshot_ending}</div>
             </div>
         </div>
         
-        <div class="content">"""
+        <div class="content">""".format(
+            network=network,
+            total_hosts=total_hosts,
+            hosts_with_ports=hosts_with_ports,
+            total_ports=total_ports,
+            total_screenshots=total_screenshots,
+            port_ending=get_port_ending(total_ports),
+            screenshot_ending=get_screenshot_ending(total_screenshots),
+            datetime_now=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        )
 
         # Добавляем информацию о хостах
         for host in json_data:
@@ -439,6 +508,29 @@ class ReportGenerator:
                 html += '</div>'
             else:
                 html += '<div class="no-ports">❌ Открытых портов не найдено</div>'
+
+            # Добавляем секцию для скриншотов, если они есть
+            if screenshots_count > 0:
+                html += f"""
+                <div class="screenshots-section">
+                    <div class="screenshots-title">
+                        <span>📸 Скриншоты</span>
+                        <span>{screenshots_count} {get_screenshot_ending(screenshots_count)}</span>
+                    </div>
+                    <div class="screenshots-grid">"""
+                
+                # Отображаем реальные скриншоты
+                for screenshot in host.get("screenshot_files", []):
+                    html += f"""
+                    <div class="screenshot-item">
+                        <img src="screenshots/{screenshot['file']}" alt="Скриншот порта {screenshot['port']}" class="screenshot-image">
+                        <div class="screenshot-info">
+                            <div class="screenshot-port">Порт: {screenshot['port']}</div>
+                            <div class="screenshot-service">Сервис: {screenshot['service']}</div>
+                        </div>
+                    </div>"""
+                
+                html += "</div></div>"
 
             html += """
                 </div>
