@@ -158,9 +158,12 @@ class NetworkScanner:
                     elif port == 5432:  # PostgreSQL
                         if not response.startswith(b"\x4e"):  # N - Authentication
                             return None
-                    elif port in [5060, 5061]:  # SIP
-                        if b"SIP/2.0" not in response:
-                            return None
+                    elif port in [5060, 5061]:  # SIP - менее строгая валидация
+                        # Для SIP принимаем любой ответ, так как не все устройства отвечают стандартно
+                        if response:
+                            return response.decode("utf-8", errors="ignore").strip()
+                        else:
+                            return "open"
                     elif port == 554:  # RTSP
                         if b"RTSP/1.0" not in response:
                             return None
