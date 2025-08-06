@@ -55,7 +55,7 @@ jobs:
     
     - name: Test with pytest
       run: |
-        pytest tests/test_basic.py -v || echo "Basic tests completed"
+        pytest tests/test_basic.py -v --tb=no || echo "Basic tests completed"
     
     - name: Upload test results
       uses: actions/upload-artifact@v3
