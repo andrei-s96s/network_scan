@@ -71,8 +71,7 @@ def setup_logging(config: Config):
         level=getattr(logging, config.log_level),
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.FileHandler(config.log_file, encoding='utf-8'),
-            logging.StreamHandler()
+            logging.FileHandler(config.log_file, encoding='utf-8')
         ]
     )
 
