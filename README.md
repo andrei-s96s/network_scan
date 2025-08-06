@@ -146,3 +146,8 @@ python -m pytest tests/test_scanner.py::TestConfig::test_config_defaults
 
 [![CI/CD](https://github.com/andrei-s96s/network_scan/workflows/Network%20Scanner%20CI%20CD/badge.svg)](https://github.com/andrei-s96s/network_scan/actions)
 
+### 📊 Отчеты CI/CD
+- **Actions** - полные логи выполнения
+- **Artifacts** - отчеты о покрытии кода
+- **Security** - отчеты о безопасности
+
