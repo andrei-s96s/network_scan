@@ -148,6 +148,6 @@ python -m pytest tests/test_scanner.py::TestConfig::test_config_defaults
 
 ### 📊 Отчеты CI/CD
 - **Actions** - полные логи выполнения
-- **Artifacts** - отчеты о покрытии кода
+- **Artifacts** - результаты тестов
 - **Security** - отчеты о безопасности
 
