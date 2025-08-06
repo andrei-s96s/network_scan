@@ -27,6 +27,7 @@ env/
 ENV/
 env.bak/
 venv.bak/
+.venv/
 
 # IDE
 .vscode/
@@ -39,12 +40,16 @@ venv.bak/
 *.log
 logs/
 
-# Scanner results
-scan-*.txt
-scan-*.json
-scan-*.html
-web/
-screenshots/
+# Scanner results - новая структура
+scan-*/
+*.log
+
+# Старые паттерны (удаляем)
+# scan-*.txt
+# scan-*.json
+# scan-*.html
+# web/
+# screenshots/
 
 # Config files with sensitive data
 .env

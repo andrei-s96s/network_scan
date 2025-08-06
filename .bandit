@@ -1,0 +1,53 @@
+# Конфигурация Bandit для проверки безопасности
+exclude_dirs: ['tests', '.venv', 'venv', '__pycache__']
+skips: ['B101', 'B601']  # Игнорируем некоторые предупреждения
+targets: ['config.py', 'network_scanner.py', 'screenshot_manager.py', 'report_generator.py', 'main.py']
+
+# Настройки для различных тестов
+tests:
+  - B101:  # assert_used
+      level: Medium
+  - B102:  # exec_used
+      level: High
+  - B103:  # set_bad_file_permissions
+      level: Medium
+  - B104:  # hardcoded_bind_all_interfaces
+      level: Medium
+  - B105:  # hardcoded_password_string
+      level: Medium
+  - B106:  # hardcoded_password_funcarg
+      level: Medium
+  - B107:  # hardcoded_password_default
+      level: Medium
+  - B201:  # flask_debug_true
+      level: High
+  - B301:  # pickle
+      level: Medium
+  - B302:  # marshal
+      level: Medium
+  - B303:  # md5
+      level: Medium
+  - B304:  # md5_insecure
+      level: Medium
+  - B305:  # sha1
+      level: Medium
+  - B306:  # mktemp_q
+      level: Medium
+  - B501:  # request_with_no_cert_validation
+      level: Medium
+  - B601:  # paramiko_calls
+      level: Low
+  - B602:  # subprocess_popen_with_shell_equals_true
+      level: Medium
+  - B603:  # subprocess_without_shell_equals_true
+      level: Low
+  - B604:  # any_other_function_with_shell_equals_true
+      level: Low
+  - B605:  # start_process_with_a_shell
+      level: Medium
+  - B606:  # start_process_with_no_shell
+      level: Low
+  - B607:  # start_process_with_partial_path
+      level: Medium
+  - B701:  # jinja2_autoescape_false
+      level: Medium

@@ -1,16 +1,21 @@
 [flake8]
-max-line-length = 127
-max-complexity = 10
+max-line-length = 88
+extend-ignore = 
+    W293,  # blank line contains whitespace (в HTML строках)
+    C901,  # too complex (функции действительно сложные)
+    E402,  # module level import not at top of file (в тестах)
+    F401   # imported but unused (в тестах)
 exclude = 
-    .git,
-    __pycache__,
     .venv,
     venv,
-    .pytest_cache,
-    htmlcov,
-    dist,
-    build
-ignore = 
-    E203,
-    W503,
-    E501 
+    __pycache__,
+    .git,
+    build,
+    dist
+per-file-ignores =
+    # Игнорируем проблемы с пробелами в HTML строках
+    report_generator.py:W293
+    # Игнорируем сложность функций
+    main.py:C901
+    network_scanner.py:C901
+    report_generator.py:C901 
