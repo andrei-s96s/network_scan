@@ -39,18 +39,18 @@ class Config:
     def __post_init__(self):
         if self.ports_tcp_probe is None:
             self.ports_tcp_probe = {
-                22:    b'',            # SSH
+                22:    b'',                    # SSH
                 80:    b'HEAD / HTTP/1.0\r\n\r\n',
-                443:   b'',            # HTTPS
-                135:   b'',            # RPC
-                139:   b'',            # NetBIOS
-                445:   b'',            # SMB
-                3389:  b'',            # RDP
-                5985:  b'',            # WinRM HTTP
-                5986:  b'',            # WinRM HTTPS
-                1433:  b'',            # MSSQL
-                3306:  b'',            # MySQL
-                5432:  b'',            # PostgreSQL
+                443:   b'',                    # HTTPS
+                135:   b'',                    # RPC
+                139:   b'',                    # NetBIOS
+                445:   b'',                    # SMB
+                3389:  b'',                    # RDP
+                5985:  b'',                    # WinRM HTTP
+                5986:  b'',                    # WinRM HTTPS
+                1433:  b'',                    # MSSQL
+                3306:  b'\x0a',               # MySQL - простой ping
+                5432:  b'\x00\x00\x00\x08\x04\xd2\x16\x2f',  # PostgreSQL startup message
             }
 
 def load_config(config_file: str = "config.yaml") -> Config:
@@ -82,16 +82,44 @@ def probe_port(ip: str, port: int, config: Config) -> Optional[str]:
         with socket.create_connection((ip, port), timeout=config.probe_timeout) as s:
             s.settimeout(config.probe_timeout)
             
-            # Специальная обработка для RDP (порт 3389)
-            if port == 3389:
-                # RDP требует специальный handshake, но мы можем проверить, что порт открыт
+            # Специальная обработка для разных типов портов
+            if port == 3389:  # RDP
                 return "RDP"
+            elif port == 5432:  # PostgreSQL
+                # PostgreSQL может не отвечать на пустой запрос
+                return "PostgreSQL"
+            elif port == 1433:  # MSSQL
+                return "MSSQL"
+            elif port == 3306:  # MySQL
+                return "MySQL"
+            elif port in (135, 139, 445):  # Windows services
+                return "Windows Service"
+            elif port in (5985, 5986):  # WinRM
+                return "WinRM"
             
+            # Для остальных портов пробуем получить banner
             probe = config.ports_tcp_probe.get(port, b'')
             if probe:
                 s.send(probe)
-            banner = s.recv(256).splitlines()[0].decode(errors='ignore').strip()
-            return banner or "open"
+                # Увеличиваем таймаут для получения ответа
+                s.settimeout(config.probe_timeout * 2)
+            
+            try:
+                response = s.recv(256)
+                if response:
+                    # Пытаемся декодировать как текст
+                    try:
+                        banner = response.splitlines()[0].decode(errors='ignore').strip()
+                        return banner or "open"
+                    except (IndexError, UnicodeDecodeError):
+                        # Если не удалось декодировать как текст, но есть данные
+                        return "open"
+                else:
+                    return "open"
+            except (socket.timeout, IndexError):
+                # Если не получили ответ, но соединение установлено - порт открыт
+                return "open"
+                
     except OSError as e:
         logging.debug(f"Порт {port} на {ip} закрыт: {e}")
         return None
