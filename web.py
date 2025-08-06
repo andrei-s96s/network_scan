@@ -218,6 +218,24 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
     """Создает красивый HTML отчет на основе JSON данных"""
     from datetime import datetime
     
+    def get_port_ending(count):
+        """Возвращает правильное окончание для слова 'порт'"""
+        if count % 10 == 1 and count % 100 != 11:
+            return ""
+        elif count % 10 in [2, 3, 4] and count % 100 not in [12, 13, 14]:
+            return "а"
+        else:
+            return "ов"
+    
+    def get_screenshot_ending(count):
+        """Возвращает правильное окончание для слова 'скриншот'"""
+        if count % 10 == 1 and count % 100 != 11:
+            return ""
+        elif count % 10 in [2, 3, 4] and count % 100 not in [12, 13, 14]:
+            return "а"
+        else:
+            return "ов"
+    
     html_template = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -230,7 +248,7 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             min-height: 100vh;
         }}
         .container {{
@@ -242,7 +260,7 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
             overflow: hidden;
         }}
         .header {{
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
             padding: 30px;
             text-align: center;
@@ -256,6 +274,26 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
             margin-top: 10px;
             opacity: 0.9;
             font-size: 1.1em;
+        }}
+        .logo-section {{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }}
+        .logo {{
+            font-size: 3em;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }}
+        .title-section {{
+            text-align: left;
         }}
         .stats {{
             display: grid;
@@ -274,7 +312,7 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
         .stat-number {{
             font-size: 2.5em;
             font-weight: bold;
-            color: #667eea;
+            color: #1e3c72;
             margin-bottom: 5px;
         }}
         .stat-label {{
@@ -329,7 +367,7 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
             gap: 15px;
         }}
         .port-number {{
-            background: #667eea;
+            background: #1e3c72;
             color: white;
             padding: 5px 10px;
             border-radius: 15px;
@@ -373,7 +411,7 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
             margin-top: 10px;
         }}
         .service-tag {{
-            background: #667eea;
+            background: #1e3c72;
             color: white;
             padding: 5px 12px;
             border-radius: 20px;
@@ -445,20 +483,38 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
             color: #bbb;
         }}
         .footer {{
-            background: #f8f9fa;
+            background: #1e3c72;
+            color: white;
             padding: 20px;
-            text-align: center;
-            color: #666;
             font-size: 0.9em;
+        }}
+        .footer-content {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }}
+        .footer-logo {{
+            font-weight: bold;
+            font-size: 1.1em;
+        }}
+        .footer-info {{
+            opacity: 0.8;
         }}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔍 Отчет сканирования сети</h1>
-            <div class="subtitle">
-                Сеть: {network} | Время: {scan_time}
+            <div class="logo-section">
+                <div class="logo">🔒</div>
+                <div class="title-section">
+                    <h1>Отчет сканирования сети</h1>
+                    <div class="subtitle">
+                        Сеть: {network} | Время: {scan_time}
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -494,7 +550,11 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
         </div>
         
         <div class="footer">
-            Отчет сгенерирован автоматически | Сетевой сканер v1.0
+            <div class="footer-content">
+                <div class="footer-info">
+                    Отчет сгенерирован автоматически | Сетевой сканер v1.0
+                </div>
+            </div>
         </div>
     </div>
     
@@ -560,11 +620,11 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
                 <div class="host-card">
                     <div class="host-header">
                         <div class="host-ip">🌐 {host['ip']}</div>
-                        <div class="host-summary">
-                            <span>📊 {host['summary']['total_ports']} портов</span>
-                            <span>🌍 {host['summary']['web_ports']} веб-портов</span>
-                            <span>📸 {host['screenshots']} скриншотов</span>
-                        </div>
+                                                 <div class="host-summary">
+                             <span>📊 {host['summary']['total_ports']} порт{get_port_ending(host['summary']['total_ports'])}</span>
+                             <span>🌍 {host['summary']['web_ports']} веб-порт{get_port_ending(host['summary']['web_ports'])}</span>
+                             <span>📸 {host['screenshots']} скриншот{get_screenshot_ending(host['screenshots'])}</span>
+                         </div>
                     </div>
                 """
                 
@@ -732,9 +792,9 @@ def scan_host(ip: str, result_file: str, config: Config, json_data: List[Dict] =
 def main():
     """Основная функция"""
     if len(sys.argv) < 2:
-        print("Usage: python web.py <network> [threads] [--json]")
+        print("Usage: python web.py <network> [threads] [--no-json]")
         print("Example: python web.py 172.30.1.0/24 10")
-        print("Example: python web.py 172.30.1.0/24 10 --json")
+        print("Example: python web.py 172.30.1.0/24 10 --no-json")
         sys.exit(1)
 
     # Загружаем конфигурацию
@@ -744,7 +804,7 @@ def main():
     # Парсим аргументы
     network_str = sys.argv[1]
     threads = int(sys.argv[2]) if len(sys.argv) > 2 and not sys.argv[2].startswith('--') else 10
-    export_json = '--json' in sys.argv
+    export_json = '--no-json' not in sys.argv  # По умолчанию включен
     
     try:
         network = validate_network(network_str)
@@ -773,7 +833,9 @@ def main():
     logging.info(f"Начинаем сканирование {len(hosts)} хостов с {threads} потоками")
     print(f"Сканирование {len(hosts)} хостов с {threads} потоками...")
     if export_json:
-        print("JSON экспорт включен")
+        print("JSON и HTML отчеты включены")
+    else:
+        print("JSON и HTML отчеты отключены")
 
     # Список для JSON данных
     json_data = [] if export_json else None
