@@ -116,6 +116,21 @@ class TestIPDevices(unittest.TestCase):
         
         self.assertIn("SIP/2.0", sip_probe)
         self.assertIn("RTSP/1.0", rtsp_probe)
+    
+    def test_strict_validation(self):
+        """Тест строгой валидации для специальных портов"""
+        from web import probe_port
+        config = Config()
+        
+        # Тестируем, что невалидные ответы возвращают None
+        # Это симулирует ситуацию, когда порт отвечает, но не как ожидаемый сервис
+        with unittest.mock.patch('socket.create_connection') as mock_conn:
+            mock_socket = unittest.mock.Mock()
+            mock_socket.recv.return_value = b'HTTP/1.1 200 OK\r\n'  # Не SIP ответ
+            mock_conn.return_value.__enter__.return_value = mock_socket
+            
+            result = probe_port("192.168.1.1", 5060, config)
+            self.assertIsNone(result)  # Должен вернуть None для невалидного SIP ответа
 
 if __name__ == "__main__":
     unittest.main()

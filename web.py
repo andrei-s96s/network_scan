@@ -220,17 +220,17 @@ def probe_port(ip: str, port: int, config: Config) -> Optional[str]:
                             if response.startswith(b'\x03\x00'):
                                 return "RDP"
                             else:
-                                # Если получили ответ, но это не RDP - порт открыт, но не RDP
-                                return "open"
+                                # Если получили ответ, но это не RDP - игнорируем порт
+                                return None
                         else:
-                            # Нет ответа на RDP probe - порт открыт, но не RDP
-                            return "open"
+                            # Нет ответа на RDP probe - игнорируем порт
+                            return None
                     except socket.timeout:
-                        # Таймаут на RDP probe - порт открыт, но не RDP
-                        return "open"
+                        # Таймаут на RDP probe - игнорируем порт
+                        return None
                 except Exception:
-                    # Если не удалось отправить RDP probe - порт открыт, но не RDP
-                    return "open"
+                    # Если не удалось отправить RDP probe - игнорируем порт
+                    return None
             elif port == 5432:  # PostgreSQL
                 # Отправляем PostgreSQL startup message
                 probe = config.ports_tcp_probe.get(port, b'')
@@ -245,16 +245,16 @@ def probe_port(ip: str, port: int, config: Config) -> Optional[str]:
                             if 'postgresql' in response_text or 'postgres' in response_text:
                                 return "PostgreSQL"
                             else:
-                                # Если получили ответ, но это не PostgreSQL - порт открыт, но не PostgreSQL
-                                return "open"
+                                # Если получили ответ, но это не PostgreSQL - игнорируем порт
+                                return None
                         else:
-                            # Нет ответа на PostgreSQL probe - порт открыт, но не PostgreSQL
-                            return "open"
+                            # Нет ответа на PostgreSQL probe - игнорируем порт
+                            return None
                     except socket.timeout:
-                        # Таймаут на PostgreSQL probe - порт открыт, но не PostgreSQL
-                        return "open"
+                        # Таймаут на PostgreSQL probe - игнорируем порт
+                        return None
                 else:
-                    return "PostgreSQL"
+                    return None
             elif port == 1433:  # MSSQL
                 return "MSSQL"
             elif port == 3306:  # MySQL
@@ -279,16 +279,16 @@ def probe_port(ip: str, port: int, config: Config) -> Optional[str]:
                             if 'sip/2.0' in response_text or 'sip' in response_text:
                                 return "SIP"
                             else:
-                                # Если получили ответ, но это не SIP - порт открыт, но не SIP сервис
-                                return "open"
+                                # Если получили ответ, но это не SIP - игнорируем порт
+                                return None
                         else:
-                            # Нет ответа на SIP probe - порт открыт, но не SIP
-                            return "open"
+                            # Нет ответа на SIP probe - игнорируем порт
+                            return None
                     except socket.timeout:
-                        # Таймаут на SIP probe - порт открыт, но не SIP
-                        return "open"
+                        # Таймаут на SIP probe - игнорируем порт
+                        return None
                 else:
-                    return "open"
+                    return None
             elif port == 10000:  # IP Phone web interface
                 return "IP Phone"
             elif port == 8080:  # Alternative web interface
@@ -307,16 +307,16 @@ def probe_port(ip: str, port: int, config: Config) -> Optional[str]:
                             if 'rtsp/1.0' in response_text or 'rtsp' in response_text:
                                 return "RTSP"
                             else:
-                                # Если получили ответ, но это не RTSP - порт открыт, но не RTSP сервис
-                                return "open"
+                                # Если получили ответ, но это не RTSP - игнорируем порт
+                                return None
                         else:
-                            # Нет ответа на RTSP probe - порт открыт, но не RTSP
-                            return "open"
+                            # Нет ответа на RTSP probe - игнорируем порт
+                            return None
                     except socket.timeout:
-                        # Таймаут на RTSP probe - порт открыт, но не RTSP
-                        return "open"
+                        # Таймаут на RTSP probe - игнорируем порт
+                        return None
                 else:
-                    return "open"
+                    return None
             elif port == 8000:  # IP Camera web interface
                 return "IP Camera"
             elif port in (37777, 37778):  # Dahua cameras
