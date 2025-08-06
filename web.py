@@ -54,15 +54,15 @@ class Config:
                 5432:  b'\x00\x00\x00\x08\x04\xd2\x16\x2f',  # PostgreSQL startup message
                 161:   b'',                    # SNMP
                 # IP Phones
-                5060:  b'',                    # SIP
-                5061:  b'',                    # SIP over TLS
+                5060:  b'OPTIONS sip:test@test.com SIP/2.0\r\nVia: SIP/2.0/UDP test.com\r\nFrom: <sip:test@test.com>\r\nTo: <sip:test@test.com>\r\nCall-ID: test@test.com\r\nCSeq: 1 OPTIONS\r\n\r\n',  # SIP OPTIONS
+                5061:  b'OPTIONS sip:test@test.com SIP/2.0\r\nVia: SIP/2.0/TLS test.com\r\nFrom: <sip:test@test.com>\r\nTo: <sip:test@test.com>\r\nCall-ID: test@test.com\r\nCSeq: 1 OPTIONS\r\n\r\n',  # SIP over TLS
                 10000: b'HEAD / HTTP/1.0\r\n\r\n',  # IP Phone web interface
                 8080:  b'HEAD / HTTP/1.0\r\n\r\n',  # Alternative web interface
                 # IP Cameras
-                554:   b'',                    # RTSP
+                554:   b'OPTIONS rtsp://test.com/test RTSP/1.0\r\nCSeq: 1\r\n\r\n',  # RTSP OPTIONS
                 8000:  b'HEAD / HTTP/1.0\r\n\r\n',  # IP Camera web interface
-                37777: b'',                    # Dahua cameras
-                37778: b'',                    # Dahua cameras
+                37777: b'HEAD / HTTP/1.0\r\n\r\n',  # Dahua cameras web interface
+                37778: b'HEAD / HTTP/1.0\r\n\r\n',  # Dahua cameras web interface
             }
 
 def load_config(config_file: str = "config.yaml") -> Config:
@@ -222,13 +222,15 @@ def probe_port(ip: str, port: int, config: Config) -> Optional[str]:
             elif port == 161:  # SNMP
                 return "SNMP"
             elif port in (5060, 5061):  # SIP
-                return "SIP"
+                # SIP порты обрабатываются в общем блоке ниже
+                pass
             elif port == 10000:  # IP Phone web interface
                 return "IP Phone"
             elif port == 8080:  # Alternative web interface
                 return "Alternative Web"
             elif port == 554:  # RTSP
-                return "RTSP"
+                # RTSP порт обрабатывается в общем блоке ниже
+                pass
             elif port == 8000:  # IP Camera web interface
                 return "IP Camera"
             elif port in (37777, 37778):  # Dahua cameras

@@ -135,13 +135,13 @@ log_file: "scanner.log"
 - Устройства с community string "public"
 
 ### IP Телефоны
-- SIP серверы (порты 5060, 5061)
+- SIP серверы (порты 5060, 5061) с правильными SIP OPTIONS probes
 - Веб-интерфейсы IP телефонов (порт 10000)
 - Cisco, Yealink, Grandstream телефоны
 - Asterisk, FreePBX серверы
 
 ### IP Камеры
-- RTSP сервисы (порт 554)
+- RTSP сервисы (порт 554) с правильными RTSP OPTIONS probes
 - Веб-интерфейсы IP камер (порт 8000)
 - Dahua, Hikvision, Axis, Foscam камеры
 - Специальные порты Dahua (37777, 37778)

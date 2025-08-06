@@ -3,7 +3,7 @@
 Тесты для определения IP телефонов и камер
 """
 import unittest
-from web import detect_os_from_banner
+from web import detect_os_from_banner, Config
 
 class TestIPDevices(unittest.TestCase):
     """Тесты для функции определения IP устройств"""
@@ -62,6 +62,42 @@ class TestIPDevices(unittest.TestCase):
         self.assertEqual(detect_os_from_banner("SIP Camera", 554), "IP Camera")
         self.assertEqual(detect_os_from_banner("IP Phone SIP", 5060), "IP Phone")
         self.assertEqual(detect_os_from_banner("Dahua IP Camera", 8000), "IP Camera")
+    
+    def test_sip_probe_configuration(self):
+        """Тест конфигурации SIP probes"""
+        config = Config()
+        
+        # Проверяем, что SIP порты имеют правильные probes
+        self.assertIn(5060, config.ports_tcp_probe)
+        self.assertIn(5061, config.ports_tcp_probe)
+        
+        # Проверяем, что probes не пустые
+        self.assertNotEqual(config.ports_tcp_probe[5060], b'')
+        self.assertNotEqual(config.ports_tcp_probe[5061], b'')
+        
+        # Проверяем, что это SIP OPTIONS запросы
+        sip_5060 = config.ports_tcp_probe[5060].decode('utf-8', errors='ignore')
+        sip_5061 = config.ports_tcp_probe[5061].decode('utf-8', errors='ignore')
+        
+        self.assertIn("OPTIONS", sip_5060)
+        self.assertIn("SIP/2.0", sip_5060)
+        self.assertIn("OPTIONS", sip_5061)
+        self.assertIn("SIP/2.0", sip_5061)
+    
+    def test_rtsp_probe_configuration(self):
+        """Тест конфигурации RTSP probes"""
+        config = Config()
+        
+        # Проверяем, что RTSP порт имеет правильный probe
+        self.assertIn(554, config.ports_tcp_probe)
+        
+        # Проверяем, что probe не пустой
+        self.assertNotEqual(config.ports_tcp_probe[554], b'')
+        
+        # Проверяем, что это RTSP OPTIONS запрос
+        rtsp_probe = config.ports_tcp_probe[554].decode('utf-8', errors='ignore')
+        self.assertIn("OPTIONS", rtsp_probe)
+        self.assertIn("RTSP/1.0", rtsp_probe)
 
 if __name__ == "__main__":
     unittest.main()
