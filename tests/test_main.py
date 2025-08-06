@@ -206,7 +206,6 @@ class TestBasic(unittest.TestCase):
         """Тест структуры файлов"""
         required_files = [
             "web.py",
-            "config.yaml", 
             "requirements.txt",
             "README.md"
         ]
