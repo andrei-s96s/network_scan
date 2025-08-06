@@ -32,7 +32,7 @@ playwright install chromium
 ## Использование
 
 ```bash
-python web.py <сеть> [потоки]
+python web.py <сеть> [потоки] [--json]
 ```
 
 ### Примеры
@@ -43,6 +43,9 @@ python web.py 172.30.1.0/24 10
 
 # Сканирование с 5 потоками (по умолчанию)
 python web.py 192.168.1.0/24 5
+
+# Сканирование с экспортом в JSON
+python web.py 172.30.1.0/24 10 --json
 ```
 
 ## Конфигурация
@@ -66,6 +69,7 @@ log_file: "scanner.log"
 ## Результаты
 
 - **TCP сканирование**: `scan-<сеть>.txt`
+- **JSON отчет**: `scan-<сеть>.json` (с флагом `--json`)
 - **Веб-скриншоты**: `./web/<ip>/<порт>.png`
 - **Логи**: `scanner.log`
 
@@ -106,6 +110,47 @@ log_file: "scanner.log"
 ```
 172.30.1.1  80:HTTP/1.1 200 OK  443:open
 172.30.1.11  22:SSH-2.0-OpenSSH_8.2p1  80:HTTP/1.1 200 OK
+```
+
+### Пример JSON структуры:
+```json
+{
+  "scan_info": {
+    "network": "172.30.1.0/24",
+    "scan_time": "2024-01-15T10:30:00",
+    "total_hosts": 254,
+    "hosts_with_ports": 5,
+    "hosts_with_screenshots": 3
+  },
+  "hosts": [
+    {
+      "ip": "172.30.1.1",
+      "ports": {
+        "80": {
+          "service": "HTTP",
+          "response": "HTTP/1.1 200 OK",
+          "status": "open"
+        },
+        "443": {
+          "service": "HTTPS",
+          "response": "open",
+          "status": "open"
+        }
+      },
+      "screenshots": 2,
+      "summary": {
+        "total_ports": 2,
+        "web_ports": 2,
+        "services": ["HTTP", "HTTPS"]
+      }
+    }
+  ],
+  "summary": {
+    "total_ports_found": 8,
+    "services_found": ["HTTP", "HTTPS", "SSH"],
+    "web_services": 3
+  }
+}
 ```
 
 ## ⚠️ Важно

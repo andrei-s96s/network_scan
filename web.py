@@ -11,10 +11,11 @@ import ipaddress
 import socket
 import logging
 import yaml
+import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 from playwright.sync_api import sync_playwright
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, List
 from dataclasses import dataclass
 
 # ---------- конфигурация ----------
@@ -81,6 +82,12 @@ def probe_port(ip: str, port: int, config: Config) -> Optional[str]:
     try:
         with socket.create_connection((ip, port), timeout=config.probe_timeout) as s:
             s.settimeout(config.probe_timeout)
+            
+            # Специальная обработка для RDP (порт 3389)
+            if port == 3389:
+                # RDP требует специальный handshake, но мы можем проверить, что порт открыт
+                return "RDP"
+            
             probe = config.ports_tcp_probe.get(port, b'')
             if probe:
                 s.send(probe)
@@ -114,6 +121,71 @@ def save_result(ip: str, results: Dict[int, str], outfile: str):
             f.write(line)
     except Exception as e:
         logging.error(f"Ошибка при записи результата для {ip}: {e}")
+
+def save_result_json(ip: str, results: Dict[int, str], json_data: List[Dict], screenshots_count: int = 0):
+    """Добавляет результат в JSON структуру"""
+    if not results:
+        return
+    
+    # Определяем сервисы по портам
+    services = {
+        22: "SSH", 80: "HTTP", 443: "HTTPS", 135: "RPC", 139: "NetBIOS",
+        445: "SMB", 3389: "RDP", 5985: "WinRM-HTTP", 5986: "WinRM-HTTPS",
+        1433: "MSSQL", 3306: "MySQL", 5432: "PostgreSQL"
+    }
+    
+    host_data = {
+        "ip": ip,
+        "ports": {},
+        "screenshots": screenshots_count,
+        "summary": {
+            "total_ports": len(results),
+            "web_ports": len([p for p in results if p in (80, 443)]),
+            "services": []
+        }
+    }
+    
+    for port, response in sorted(results.items()):
+        service_name = services.get(port, f"Unknown-{port}")
+        host_data["ports"][str(port)] = {
+            "service": service_name,
+            "response": response,
+            "status": "open"
+        }
+        host_data["summary"]["services"].append(service_name)
+    
+    json_data.append(host_data)
+
+def save_json_report(json_data: List[Dict], network: str, output_file: str):
+    """Сохраняет полный JSON отчет"""
+    from datetime import datetime
+    
+    report = {
+        "scan_info": {
+            "network": network,
+            "scan_time": datetime.now().isoformat(),
+            "total_hosts": len(json_data),
+            "hosts_with_ports": len([h for h in json_data if h["ports"]]),
+            "hosts_with_screenshots": len([h for h in json_data if h["screenshots"] > 0])
+        },
+        "hosts": json_data,
+        "summary": {
+            "total_ports_found": sum(len(h["ports"]) for h in json_data),
+            "services_found": list(set(
+                service for host in json_data 
+                for port_data in host["ports"].values() 
+                for service in [port_data["service"]]
+            )),
+            "web_services": len([h for h in json_data if h["summary"]["web_ports"] > 0])
+        }
+    }
+    
+    try:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(report, f, indent=2, ensure_ascii=False)
+        logging.info(f"JSON отчет сохранен: {output_file}")
+    except Exception as e:
+        logging.error(f"Ошибка при сохранении JSON отчета: {e}")
 
 # ---------- web screenshot ----------
 class BrowserManager:
@@ -192,7 +264,7 @@ def validate_threads(threads: int) -> int:
     return threads
 
 # ---------- main ----------
-def scan_host(ip: str, result_file: str, config: Config) -> Tuple[str, int, bool]:
+def scan_host(ip: str, result_file: str, config: Config, json_data: List[Dict] = None) -> Tuple[str, int, bool]:
     """Сканирует один хост"""
     try:
         tcp_results = tcp_scan(ip, config)
@@ -204,6 +276,10 @@ def scan_host(ip: str, result_file: str, config: Config) -> Tuple[str, int, bool
             web_ok = screenshot_ip(ip, config)
         else:
             web_ok = 0
+        
+        # Добавляем в JSON если передан
+        if json_data is not None:
+            save_result_json(ip, tcp_results, json_data, web_ok)
             
         return ip, web_ok, bool(tcp_results)
     except Exception as e:
@@ -213,8 +289,9 @@ def scan_host(ip: str, result_file: str, config: Config) -> Tuple[str, int, bool
 def main():
     """Основная функция"""
     if len(sys.argv) < 2:
-        print("Usage: python web.py <network> [threads]")
+        print("Usage: python web.py <network> [threads] [--json]")
         print("Example: python web.py 172.30.1.0/24 10")
+        print("Example: python web.py 172.30.1.0/24 10 --json")
         sys.exit(1)
 
     # Загружаем конфигурацию
@@ -223,7 +300,8 @@ def main():
     
     # Парсим аргументы
     network_str = sys.argv[1]
-    threads = int(sys.argv[2]) if len(sys.argv) > 2 else 10
+    threads = int(sys.argv[2]) if len(sys.argv) > 2 and not sys.argv[2].startswith('--') else 10
+    export_json = '--json' in sys.argv
     
     try:
         network = validate_network(network_str)
@@ -233,17 +311,28 @@ def main():
         sys.exit(1)
 
     result_file = f"scan-{network_str.replace('/', '_')}.txt"
+    json_file = f"scan-{network_str.replace('/', '_')}.json" if export_json else None
+    
     if os.path.exists(result_file):
         os.remove(result_file)
         logging.info(f"Удален старый файл результатов: {result_file}")
+    
+    if json_file and os.path.exists(json_file):
+        os.remove(json_file)
+        logging.info(f"Удален старый JSON файл: {json_file}")
 
     hosts = list(network.hosts())
     logging.info(f"Начинаем сканирование {len(hosts)} хостов с {threads} потоками")
     print(f"Сканирование {len(hosts)} хостов с {threads} потоками...")
+    if export_json:
+        print("JSON экспорт включен")
+
+    # Список для JSON данных
+    json_data = [] if export_json else None
 
     with tqdm(total=len(hosts), unit="ip") as pbar:
         with ThreadPoolExecutor(max_workers=threads) as ex:
-            futures = {ex.submit(scan_host, str(ip), result_file, config): ip for ip in hosts}
+            futures = {ex.submit(scan_host, str(ip), result_file, config, json_data): ip for ip in hosts}
             for fut in as_completed(futures):
                 try:
                     ip, web_ok, tcp_ok = fut.result()
@@ -253,10 +342,16 @@ def main():
                     logging.error(f"Ошибка в потоке: {e}")
                     pbar.update(1)
 
+    # Сохраняем JSON отчет если нужно
+    if export_json and json_data:
+        save_json_report(json_data, network_str, json_file)
+
     logging.info("Сканирование завершено")
     print("Готово.")
     print("Скриншоты → ./web/")
     print("TCP scan   →", result_file)
+    if export_json:
+        print("JSON отчет →", json_file)
 
 if __name__ == "__main__":
     # Отключаем предупреждения
