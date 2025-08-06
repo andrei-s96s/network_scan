@@ -32,7 +32,7 @@ class ScannerConfig:
     # Порты для сканирования с улучшенными пробами
     ports_tcp_probe: Dict[int, bytes] = field(
         default_factory=lambda: {
-            22: b"",  # SSH
+            22: b"SSH-2.0-OpenSSH_8.0\r\n",  # SSH - отправляем SSH версию для получения баннера
             80: b"HEAD / HTTP/1.0\r\n\r\n",
             443: b"",  # HTTPS
             135: b"",  # RPC

@@ -131,6 +131,16 @@ class NetworkScanner:
         ):
             return "IP Camera"
 
+        # Определение по портам (если баннер не содержит явных признаков)
+        if port == 22:  # SSH
+            return "Linux"  # SSH обычно на Linux/Unix системах
+        elif port in [135, 139, 445]:  # Windows-специфичные порты
+            return "Windows"
+        elif port == 3389:  # RDP
+            return "Windows"
+        elif port in [5985, 5986]:  # WinRM
+            return "Windows"
+
         return None
 
     def probe_port(self, ip: str, port: int) -> Optional[str]:
@@ -198,9 +208,13 @@ class NetworkScanner:
                     result = future.result()
                     if result:
                         open_ports[port] = result
-                        # Определяем ОС по первому найденному баннеру
-                        if detected_os is None and result != "open":
-                            detected_os = self.detect_os_from_banner(result, port)
+                        # Определяем ОС по первому найденному баннеру или порту
+                        if detected_os is None:
+                            if result != "open":
+                                detected_os = self.detect_os_from_banner(result, port)
+                            else:
+                                # Если баннер не получен, пробуем определить по порту
+                                detected_os = self.detect_os_from_banner("", port)
                     # Добавляем отладочную информацию для всех портов в DEBUG режиме
                     self.logger.debug(f"Порт {port} на {ip}: результат = {result}")
                 except Exception as e:
