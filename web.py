@@ -76,6 +76,42 @@ def setup_logging(config: Config):
     )
 
 # ---------- TCP probe ----------
+def detect_os_from_banner(banner: str, port: int) -> Optional[str]:
+    """Определяет ОС по баннеру сервиса"""
+    banner_lower = banner.lower()
+    
+    # Windows признаки
+    if any(keyword in banner_lower for keyword in ['windows', 'microsoft', 'iis', 'exchange']):
+        return "Windows"
+    if 'smb' in banner_lower or port in (135, 139, 445):
+        return "Windows"
+    if 'rdp' in banner_lower or port == 3389:
+        return "Windows"
+    if 'winrm' in banner_lower or port in (5985, 5986):
+        return "Windows"
+    
+    # Linux признаки
+    if any(keyword in banner_lower for keyword in ['linux', 'ubuntu', 'debian', 'centos', 'redhat', 'fedora']):
+        return "Linux"
+    if 'openssh' in banner_lower and port == 22:
+        return "Linux"  # Чаще всего SSH на Linux
+    if 'apache' in banner_lower and 'linux' in banner_lower:
+        return "Linux"
+    
+    # Unix признаки
+    if any(keyword in banner_lower for keyword in ['freebsd', 'openbsd', 'netbsd', 'solaris']):
+        return "Unix"
+    if 'openssh' in banner_lower and 'bsd' in banner_lower:
+        return "Unix"
+    
+    # Специфичные сервисы
+    if 'nginx' in banner_lower:
+        return "Linux"  # Nginx чаще на Linux
+    if 'apache' in banner_lower:
+        return "Linux"  # Apache чаще на Linux
+    
+    return None
+
 def probe_port(ip: str, port: int, config: Config) -> Optional[str]:
     """Вернёт первую строку ответа или 'open', если порт открыт без данных."""
     try:
@@ -127,15 +163,22 @@ def probe_port(ip: str, port: int, config: Config) -> Optional[str]:
         logging.error(f"Ошибка при сканировании порта {port} на {ip}: {e}")
         return None
 
-def tcp_scan(ip: str, config: Config) -> Dict[int, str]:
-    """{port: response} для всех открытых портов."""
+def tcp_scan(ip: str, config: Config) -> Tuple[Dict[int, str], Optional[str]]:
+    """{port: response} для всех открытых портов и определение ОС."""
     results = {}
+    detected_os = None
+    
     for port in config.ports_tcp_probe:
         resp = probe_port(ip, port, config)
         if resp is not None:
             results[port] = resp
             logging.info(f"Открыт порт {port} на {ip}: {resp}")
-    return results
+            
+            # Пытаемся определить ОС по баннеру
+            if detected_os is None and resp != "open":
+                detected_os = detect_os_from_banner(resp, port)
+    
+    return results, detected_os
 
 def save_result(ip: str, results: Dict[int, str], outfile: str):
     """Записывает строку вида IP  port:resp port:resp ..."""
@@ -149,7 +192,7 @@ def save_result(ip: str, results: Dict[int, str], outfile: str):
     except Exception as e:
         logging.error(f"Ошибка при записи результата для {ip}: {e}")
 
-def save_result_json(ip: str, results: Dict[int, str], json_data: List[Dict], screenshots_count: int = 0):
+def save_result_json(ip: str, results: Dict[int, str], json_data: List[Dict], screenshots_count: int = 0, detected_os: Optional[str] = None):
     """Добавляет результат в JSON структуру"""
     if not results:
         return
@@ -165,6 +208,7 @@ def save_result_json(ip: str, results: Dict[int, str], json_data: List[Dict], sc
         "ip": ip,
         "ports": {},
         "screenshots": screenshots_count,
+        "os": detected_os,
         "summary": {
             "total_ports": len(results),
             "web_ports": len([p for p in results if p in (80, 443)]),
@@ -542,12 +586,14 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
             {hosts_html}
         </div>
         
-        <div class="services-summary">
-            <h3>🔧 Обнаруженные сервисы</h3>
-            <div class="services-list">
-                {services_html}
-            </div>
-        </div>
+                 <div class="services-summary">
+             <h3>🔧 Обнаруженные сервисы</h3>
+             <div class="services-list">
+                 {services_html}
+             </div>
+         </div>
+         
+         {os_stats_html if os_stats else ''}
         
         <div class="footer">
             <div class="footer-content">
@@ -605,6 +651,12 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
     total_ports = sum(len(h["ports"]) for h in json_data)
     web_services = len([h for h in json_data if h["summary"]["web_ports"] > 0])
     
+    # Статистика по ОС
+    os_stats = {}
+    for host in json_data:
+        if host.get('os'):
+            os_stats[host['os']] = os_stats.get(host['os'], 0) + 1
+    
     # Собираем все уникальные сервисы
     all_services = set()
     for host in json_data:
@@ -624,6 +676,7 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
                              <span>📊 {host['summary']['total_ports']} порт{get_port_ending(host['summary']['total_ports'])}</span>
                              <span>🌍 {host['summary']['web_ports']} веб-порт{get_port_ending(host['summary']['web_ports'])}</span>
                              <span>📸 {host['screenshots']} скриншот{get_screenshot_ending(host['screenshots'])}</span>
+                             {f'<span>💻 {host["os"]}</span>' if host.get('os') else ''}
                          </div>
                     </div>
                 """
@@ -670,6 +723,21 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
     services_html = ""
     for service in sorted(all_services):
         services_html += f'<span class="service-tag">{service}</span>'
+    
+    # Генерируем HTML для статистики ОС
+    os_stats_html = ""
+    if os_stats:
+        os_stats_html = """
+        <div class="services-summary">
+            <h3>💻 Операционные системы</h3>
+            <div class="services-list">
+        """
+        for os_name, count in sorted(os_stats.items()):
+            os_stats_html += f'<span class="service-tag">{os_name} ({count})</span>'
+        os_stats_html += """
+            </div>
+        </div>
+        """
     
     # Заполняем шаблон
     html_content = html_template.format(
@@ -770,7 +838,7 @@ def validate_threads(threads: int) -> int:
 def scan_host(ip: str, result_file: str, config: Config, json_data: List[Dict] = None) -> Tuple[str, int, bool]:
     """Сканирует один хост"""
     try:
-        tcp_results = tcp_scan(ip, config)
+        tcp_results, detected_os = tcp_scan(ip, config)
         save_result(ip, tcp_results, result_file)
         
         # Делаем веб-скриншоты только если есть открытые веб-порты
@@ -782,7 +850,7 @@ def scan_host(ip: str, result_file: str, config: Config, json_data: List[Dict] =
         
         # Добавляем в JSON если передан
         if json_data is not None:
-            save_result_json(ip, tcp_results, json_data, web_ok)
+            save_result_json(ip, tcp_results, json_data, web_ok, detected_os)
             
         return ip, web_ok, bool(tcp_results)
     except Exception as e:
