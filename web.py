@@ -17,6 +17,7 @@ from tqdm import tqdm
 from playwright.sync_api import sync_playwright
 from typing import Dict, Optional, Tuple, List
 from dataclasses import dataclass
+import struct
 
 # ---------- конфигурация ----------
 @dataclass
@@ -51,6 +52,17 @@ class Config:
                 1433:  b'',                    # MSSQL
                 3306:  b'\x0a',               # MySQL - простой ping
                 5432:  b'\x00\x00\x00\x08\x04\xd2\x16\x2f',  # PostgreSQL startup message
+                161:   b'',                    # SNMP
+                # IP Phones
+                5060:  b'',                    # SIP
+                5061:  b'',                    # SIP over TLS
+                10000: b'HEAD / HTTP/1.0\r\n\r\n',  # IP Phone web interface
+                8080:  b'HEAD / HTTP/1.0\r\n\r\n',  # Alternative web interface
+                # IP Cameras
+                554:   b'',                    # RTSP
+                8000:  b'HEAD / HTTP/1.0\r\n\r\n',  # IP Camera web interface
+                37777: b'',                    # Dahua cameras
+                37778: b'',                    # Dahua cameras
             }
 
 def load_config(config_file: str = "config.yaml") -> Config:
@@ -76,6 +88,65 @@ def setup_logging(config: Config):
     )
 
 # ---------- TCP probe ----------
+def create_snmp_get_request(community: str = "public", oid: str = "1.3.6.1.2.1.1.1.0") -> bytes:
+    """Создает SNMP GET-REQUEST пакет"""
+    # Простой SNMP v1 GET-REQUEST
+    # SEQUENCE
+    sequence = b'\x30'
+    
+    # Version (INTEGER 0)
+    version = b'\x02\x01\x00'
+    
+    # Community string
+    community_bytes = community.encode('ascii')
+    community_len = len(community_bytes)
+    community_octet = b'\x04' + bytes([community_len]) + community_bytes
+    
+    # PDU
+    pdu_type = b'\xa0'  # GET-REQUEST
+    pdu_length = b'\x1c'
+    
+    # Request ID
+    request_id = b'\x02\x01\x01'
+    
+    # Error status
+    error_status = b'\x02\x01\x00'
+    
+    # Error index
+    error_index = b'\x02\x01\x00'
+    
+    # Varbind list
+    varbind_list = b'\x30\x0e'
+    
+    # Varbind
+    varbind = b'\x30\x0c'
+    
+    # OID
+    oid_parts = [int(x) for x in oid.split('.')]
+    oid_bytes = b''
+    for part in oid_parts:
+        if part < 128:
+            oid_bytes += bytes([part])
+        else:
+            # Для больших чисел нужна более сложная логика
+            oid_bytes += bytes([part])
+    
+    oid_len = len(oid_bytes)
+    oid_octet = b'\x06' + bytes([oid_len]) + oid_bytes
+    
+    # Null value
+    null_value = b'\x05\x00'
+    
+    # Собираем пакет
+    varbind_content = oid_octet + null_value
+    varbind_list_content = varbind + varbind_content
+    pdu_content = request_id + error_status + error_index + varbind_list_content
+    
+    # Вычисляем длины
+    total_length = len(version + community_octet + pdu_type + bytes([len(pdu_content)]) + pdu_content)
+    
+    return sequence + bytes([total_length]) + version + community_octet + pdu_type + bytes([len(pdu_content)]) + pdu_content
+
 def detect_os_from_banner(banner: str, port: int) -> Optional[str]:
     """Определяет ОС по баннеру сервиса"""
     banner_lower = banner.lower()
@@ -110,6 +181,22 @@ def detect_os_from_banner(banner: str, port: int) -> Optional[str]:
     if 'apache' in banner_lower:
         return "Linux"  # Apache чаще на Linux
     
+    # SNMP устройства
+    if 'snmp' in banner_lower or port == 161:
+        return "Network Device"  # Сетевые устройства
+    
+    # IP Phones
+    if any(keyword in banner_lower for keyword in ['sip', 'asterisk', 'freepbx', 'cisco', 'yealink', 'grandstream']):
+        return "IP Phone"
+    if port in (5060, 5061, 10000):
+        return "IP Phone"
+    
+    # IP Cameras
+    if any(keyword in banner_lower for keyword in ['rtsp', 'dahua', 'hikvision', 'axis', 'foscam', 'ip camera', 'ipcam']):
+        return "IP Camera"
+    if port in (554, 8000, 37777, 37778):
+        return "IP Camera"
+    
     return None
 
 def probe_port(ip: str, port: int, config: Config) -> Optional[str]:
@@ -132,6 +219,20 @@ def probe_port(ip: str, port: int, config: Config) -> Optional[str]:
                 return "Windows Service"
             elif port in (5985, 5986):  # WinRM
                 return "WinRM"
+            elif port == 161:  # SNMP
+                return "SNMP"
+            elif port in (5060, 5061):  # SIP
+                return "SIP"
+            elif port == 10000:  # IP Phone web interface
+                return "IP Phone"
+            elif port == 8080:  # Alternative web interface
+                return "Alternative Web"
+            elif port == 554:  # RTSP
+                return "RTSP"
+            elif port == 8000:  # IP Camera web interface
+                return "IP Camera"
+            elif port in (37777, 37778):  # Dahua cameras
+                return "Dahua Camera"
             
             # Для остальных портов пробуем получить banner
             probe = config.ports_tcp_probe.get(port, b'')
@@ -139,6 +240,31 @@ def probe_port(ip: str, port: int, config: Config) -> Optional[str]:
                 s.send(probe)
                 # Увеличиваем таймаут для получения ответа
                 s.settimeout(config.probe_timeout * 2)
+            
+            # Специальная обработка для SNMP
+            if port == 161:
+                try:
+                    # Создаем UDP сокет для SNMP
+                    udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    udp_socket.settimeout(config.probe_timeout)
+                    
+                    # Отправляем SNMP GET-REQUEST
+                    snmp_packet = create_snmp_get_request()
+                    udp_socket.sendto(snmp_packet, (ip, 161))
+                    
+                    # Пытаемся получить ответ
+                    response, addr = udp_socket.recvfrom(1024)
+                    udp_socket.close()
+                    
+                    if response:
+                        # Проверяем, что это SNMP ответ
+                        if response.startswith(b'\x30'):
+                            return "SNMP (public)"
+                        else:
+                            return "SNMP"
+                except (socket.timeout, OSError):
+                    udp_socket.close()
+                    return "SNMP"
             
             try:
                 response = s.recv(256)
@@ -201,7 +327,11 @@ def save_result_json(ip: str, results: Dict[int, str], json_data: List[Dict], sc
     services = {
         22: "SSH", 80: "HTTP", 443: "HTTPS", 135: "RPC", 139: "NetBIOS",
         445: "SMB", 3389: "RDP", 5985: "WinRM-HTTP", 5986: "WinRM-HTTPS",
-        1433: "MSSQL", 3306: "MySQL", 5432: "PostgreSQL"
+        1433: "MSSQL", 3306: "MySQL", 5432: "PostgreSQL", 161: "SNMP",
+        # IP Phones
+        5060: "SIP", 5061: "SIP-TLS", 10000: "IP Phone Web", 8080: "Alternative Web",
+        # IP Cameras
+        554: "RTSP", 8000: "IP Camera Web", 37777: "Dahua Camera", 37778: "Dahua Camera"
     }
     
     host_data = {
@@ -593,7 +723,7 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
              </div>
          </div>
          
-         {os_stats_html if os_stats else ''}
+         {os_stats_html}
         
         <div class="footer">
             <div class="footer-content">
@@ -741,15 +871,16 @@ def save_html_report(json_data: List[Dict], network: str, output_file: str):
     
     # Заполняем шаблон
     html_content = html_template.format(
-        network=network,
-        scan_time=datetime.now().strftime("%d.%m.%Y %H:%M:%S"),
-        total_hosts=total_hosts,
-        hosts_with_ports=hosts_with_ports,
-        total_ports=total_ports,
-        web_services=web_services,
-        hosts_html=hosts_html,
-        services_html=services_html
-    )
+         network=network,
+         scan_time=datetime.now().strftime("%d.%m.%Y %H:%M:%S"),
+         total_hosts=total_hosts,
+         hosts_with_ports=hosts_with_ports,
+         total_ports=total_ports,
+         web_services=web_services,
+         hosts_html=hosts_html,
+         services_html=services_html,
+         os_stats_html=os_stats_html
+     )
     
     try:
         with open(output_file, 'w', encoding='utf-8') as f:

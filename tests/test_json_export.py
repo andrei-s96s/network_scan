@@ -129,6 +129,55 @@ class TestJSONExport(unittest.TestCase):
         self.assertEqual(host_data["ports"]["5432"]["service"], "PostgreSQL")
         self.assertEqual(host_data["ports"]["5432"]["response"], "PostgreSQL")
         self.assertEqual(host_data["ports"]["5432"]["status"], "open")
+    
+    def test_ip_phone_detection(self):
+        """Тест определения IP телефонов"""
+        json_data = []
+        results = {5060: "SIP", 10000: "IP Phone"}
+        
+        save_result_json("192.168.1.102", results, json_data, 0)
+        
+        self.assertEqual(len(json_data), 1)
+        host_data = json_data[0]
+        
+        self.assertEqual(host_data["ip"], "192.168.1.102")
+        self.assertIn("5060", host_data["ports"])
+        self.assertEqual(host_data["ports"]["5060"]["service"], "SIP")
+        self.assertEqual(host_data["ports"]["5060"]["response"], "SIP")
+        
+        self.assertIn("10000", host_data["ports"])
+        self.assertEqual(host_data["ports"]["10000"]["service"], "IP Phone Web")
+        self.assertEqual(host_data["ports"]["10000"]["response"], "IP Phone")
+        
+        self.assertIn("SIP", host_data["summary"]["services"])
+        self.assertIn("IP Phone Web", host_data["summary"]["services"])
+    
+    def test_ip_camera_detection(self):
+        """Тест определения IP камер"""
+        json_data = []
+        results = {554: "RTSP", 8000: "IP Camera", 37777: "Dahua Camera"}
+        
+        save_result_json("192.168.1.103", results, json_data, 0)
+        
+        self.assertEqual(len(json_data), 1)
+        host_data = json_data[0]
+        
+        self.assertEqual(host_data["ip"], "192.168.1.103")
+        self.assertIn("554", host_data["ports"])
+        self.assertEqual(host_data["ports"]["554"]["service"], "RTSP")
+        self.assertEqual(host_data["ports"]["554"]["response"], "RTSP")
+        
+        self.assertIn("8000", host_data["ports"])
+        self.assertEqual(host_data["ports"]["8000"]["service"], "IP Camera Web")
+        self.assertEqual(host_data["ports"]["8000"]["response"], "IP Camera")
+        
+        self.assertIn("37777", host_data["ports"])
+        self.assertEqual(host_data["ports"]["37777"]["service"], "Dahua Camera")
+        self.assertEqual(host_data["ports"]["37777"]["response"], "Dahua Camera")
+        
+        self.assertIn("RTSP", host_data["summary"]["services"])
+        self.assertIn("IP Camera Web", host_data["summary"]["services"])
+        self.assertIn("Dahua Camera", host_data["summary"]["services"])
 
 
 if __name__ == '__main__':

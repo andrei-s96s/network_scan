@@ -30,6 +30,15 @@ class TestConfig(unittest.TestCase):
         self.assertIsNotNone(config.ports_tcp_probe)
         self.assertIn(80, config.ports_tcp_probe)
         self.assertIn(443, config.ports_tcp_probe)
+        
+        # Проверяем новые порты для IP устройств
+        self.assertIn(5060, config.ports_tcp_probe)  # SIP
+        self.assertIn(5061, config.ports_tcp_probe)  # SIP-TLS
+        self.assertIn(10000, config.ports_tcp_probe)  # IP Phone Web
+        self.assertIn(554, config.ports_tcp_probe)   # RTSP
+        self.assertIn(8000, config.ports_tcp_probe)  # IP Camera Web
+        self.assertIn(37777, config.ports_tcp_probe) # Dahua Camera
+        self.assertIn(37778, config.ports_tcp_probe) # Dahua Camera
     
     def test_config_custom(self):
         """Тест пользовательской конфигурации"""
