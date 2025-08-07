@@ -1,10 +1,6 @@
 [flake8]
 max-line-length = 88
-extend-ignore = 
-    W293,  # blank line contains whitespace (в HTML строках)
-    C901,  # too complex (функции действительно сложные)
-    E402,  # module level import not at top of file (в тестах)
-    F401   # imported but unused (в тестах)
+extend-ignore = W293,C901,E402,F401
 exclude = 
     .venv,
     venv,

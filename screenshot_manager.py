@@ -118,12 +118,9 @@ class AsyncScreenshotManager:
                 continue
             if result:
                 successful_screenshots += 1
-                # Определяем IP из задачи (упрощенно)
-                for scan_result in scan_results:
-                    for port in scan_result.open_ports.keys():
-                        if port in self._get_web_ports():
-                            screenshots_count[scan_result.ip] = screenshots_count.get(scan_result.ip, 0) + 1
-                            break
+                # Определяем IP и порт из задачи
+                task_ip, task_port = screenshot_tasks[i].args[0], screenshot_tasks[i].args[1]
+                screenshots_count[task_ip] = screenshots_count.get(task_ip, 0) + 1
 
         self.logger.info(f"Создано скриншотов: {successful_screenshots} для {len(screenshots_count)} хостов")
         return screenshots_count

@@ -68,22 +68,35 @@ class ReportGenerator:
                 "scan_time": datetime.now().isoformat(),
                 "total_hosts": len(scan_results),
                 "hosts_with_ports": len([r for r in scan_results if r.open_ports]),
-                "hosts_with_screenshots": (
-                    len(screenshots_count) if screenshots_count else 0
-                ),
+                "hosts_with_screenshots": 0,  # Будет пересчитано ниже
             },
             "hosts": [],
         }
 
         # Обрабатываем каждый хост
         for result in scan_results:
+            # Подсчитываем реальные скриншоты для этого хоста
+            real_screenshots = 0
+            screenshot_files = []
+            
+            for port in result.open_ports.keys():
+                if port in {80, 443, 8080, 10000, 8000, 37777, 37778}:
+                    screenshot_file = f"{result.ip}_{port}.png"
+                    screenshot_path = network_dir / "screenshots" / screenshot_file
+                    if screenshot_path.exists():
+                        real_screenshots += 1
+                        screenshot_files.append({
+                            "port": port,
+                            "service": self._get_service_name(port),
+                            "file": screenshot_file
+                        })
+
             host_data = {
                 "ip": result.ip,
                 "ports": {},
-                "screenshots": (
-                    screenshots_count.get(result.ip, 0) if screenshots_count else 0
-                ),
+                "screenshots": real_screenshots,
                 "detected_os": result.detected_os,
+                "screenshot_files": screenshot_files,
                 "summary": {
                     "total_ports": len(result.open_ports),
                     "web_ports": len(
@@ -108,7 +121,11 @@ class ReportGenerator:
 
             json_data["hosts"].append(host_data)
 
-        # Сохраняем JSON с отступами для читаемости
+        # Пересчитываем общее количество хостов со скриншотами
+        json_data["scan_info"]["hosts_with_screenshots"] = len([
+            h for h in json_data["hosts"] if h["screenshots"] > 0
+        ])
+
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(json_data, f, ensure_ascii=False, indent=2)
 
@@ -131,9 +148,7 @@ class ReportGenerator:
             host_data = {
                 "ip": result.ip,
                 "ports": {},
-                "screenshots": (
-                    screenshots_count.get(result.ip, 0) if screenshots_count else 0
-                ),
+                "screenshots": 0,  # Будет пересчитано ниже
                 "detected_os": result.detected_os,
                 "screenshot_files": [],  # Добавляем список файлов скриншотов
             }
@@ -155,6 +170,9 @@ class ReportGenerator:
                             "service": service_name,
                             "file": screenshot_file
                         })
+
+            # Пересчитываем количество скриншотов на основе реальных файлов
+            host_data["screenshots"] = len(host_data["screenshot_files"])
 
             json_data.append(host_data)
 

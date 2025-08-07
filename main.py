@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Оптимизированный сетевой сканер с веб-скриншотами и асинхронным сканированием
+Версия: 1.0.0
 """
 
 import sys
@@ -22,6 +23,9 @@ from retry_manager import RetryManager, RetryConfigs
 
 # Инициализация colorama для цветного вывода
 init(autoreset=True)
+
+# Версия проекта
+__version__ = "1.0.0"
 
 
 def validate_network(network_str: str) -> str:
@@ -226,9 +230,61 @@ async def main_async():
                 scan_results = cached_results
             else:
                 print_colored("🔄 Кэш не найден, выполняем сканирование", Fore.YELLOW)
-                scan_results = await perform_scan()
+                if args.async_scan:
+                    scan_results = await perform_scan()
+                else:
+                    # Для синхронного режима выполняем сканирование напрямую
+                    if args.stream_process:
+                        print_colored("🌊 Используем потоковую обработку", Fore.CYAN)
+                        stream_config = StreamConfig(
+                            batch_size=100,
+                            max_memory_mb=512,
+                            save_interval=50
+                        )
+                        stream_processor = StreamProcessor(config, stream_config)
+                        
+                        all_results = []
+                        async for batch_results in stream_processor.process_network_stream(network):
+                            all_results.extend(batch_results)
+                            print_colored(f"📦 Обработан пакет: {len(batch_results)} хостов", Fore.GREEN)
+                        
+                        scan_results = all_results
+                    else:
+                        # Синхронное сканирование
+                        if retry_mgr:
+                            scan_results = retry_mgr.retry_sync(
+                                scanner.scan_network, network, max_workers=threads
+                            )
+                        else:
+                            scan_results = scanner.scan_network(network, max_workers=threads)
         else:
-            scan_results = await perform_scan()
+            if args.async_scan:
+                scan_results = await perform_scan()
+            else:
+                # Для синхронного режима выполняем сканирование напрямую
+                if args.stream_process:
+                    print_colored("🌊 Используем потоковую обработку", Fore.CYAN)
+                    stream_config = StreamConfig(
+                        batch_size=100,
+                        max_memory_mb=512,
+                        save_interval=50
+                    )
+                    stream_processor = StreamProcessor(config, stream_config)
+                    
+                    all_results = []
+                    async for batch_results in stream_processor.process_network_stream(network):
+                        all_results.extend(batch_results)
+                        print_colored(f"📦 Обработан пакет: {len(batch_results)} хостов", Fore.GREEN)
+                    
+                    scan_results = all_results
+                else:
+                    # Синхронное сканирование
+                    if retry_mgr:
+                        scan_results = retry_mgr.retry_sync(
+                            scanner.scan_network, network, max_workers=threads
+                        )
+                    else:
+                        scan_results = scanner.scan_network(network, max_workers=threads)
 
         if not scan_results:
             print_colored("📭 Не найдено хостов с открытыми портами", Fore.YELLOW)
@@ -261,11 +317,9 @@ async def main_async():
                         scan_results, network_dir
                     )
             else:
-                # Синхронное создание скриншотов (для обратной совместимости)
-                with ScreenshotManager(config) as screenshot_mgr:
-                    screenshots_count = screenshot_mgr.create_screenshots(
-                        scan_results, network_dir
-                    )
+                # Для синхронного режима пропускаем скриншоты чтобы избежать проблем с Playwright
+                print_colored("⚠️ Скриншоты отключены в синхронном режиме", Fore.YELLOW)
+                screenshots_count = {}
 
         # Генерация отчетов
         print_colored("📊 Создание отчетов...", Fore.CYAN)
@@ -341,6 +395,30 @@ async def main_async():
             import traceback
             print_colored(traceback.format_exc(), Fore.RED)
         sys.exit(1)
+
+
+def create_screenshots_sync(config, scan_results, network_dir):
+    """Синхронное создание скриншотов"""
+    try:
+        # Создаем новый event loop для синхронных операций
+        import asyncio
+        import nest_asyncio
+        
+        # Применяем патч для вложенных event loops
+        nest_asyncio.apply()
+        
+        # Создаем новый loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            with ScreenshotManager(config) as screenshot_mgr:
+                return screenshot_mgr.create_screenshots(scan_results, network_dir)
+        finally:
+            loop.close()
+    except Exception as e:
+        print_colored(f"⚠️ Ошибка при создании скриншотов: {e}", Fore.YELLOW)
+        return {}
 
 
 def main():

@@ -163,27 +163,17 @@ class AsyncNetworkScanner:
         return None
 
     async def probe_port_async(self, ip: str, port: int) -> Tuple[int, Optional[str]]:
-        """Асинхронно проверяет один порт с улучшенной обработкой ошибок"""
-        start_time = time.time()
-        
+        """Асинхронно проверяет один порт"""
         try:
-            # Используем семафор для ограничения одновременных соединений
-            async with self.semaphore:
-                # Создаем соединение в отдельном потоке (socket не поддерживает asyncio)
-                loop = asyncio.get_event_loop()
-                result = await loop.run_in_executor(
-                    None, self._probe_port_sync, ip, port
-                )
-                
-                # Обновляем метрики производительности
-                response_time = time.time() - start_time
-                self._update_performance_metrics(result is not None, response_time)
-                
-                return port, result
+            # Создаем соединение в отдельном потоке
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None, self._probe_port_sync, ip, port
+            )
+            
+            return port, result
                 
         except Exception as e:
-            self.logger.debug(f"Ошибка при сканировании {ip}:{port}: {e}")
-            self._update_performance_metrics(False, time.time() - start_time)
             return port, None
 
     def _probe_port_sync(self, ip: str, port: int) -> Optional[str]:
@@ -280,16 +270,10 @@ class AsyncNetworkScanner:
         start_time = time.time()
         self.logger.info(f"Сканирование {ip}")
 
-        # Вычисляем оптимальное количество одновременных соединений
-        optimal_concurrency = self._calculate_optimal_concurrency()
-        self.semaphore = asyncio.Semaphore(optimal_concurrency)
-        
-        self.logger.debug(f"Оптимальная конкуренция для {ip}: {optimal_concurrency}")
-
         open_ports = {}
         detected_os = None
 
-        # Создаем задачи для всех портов
+        # Создаем задачи для всех портов без семафора
         tasks = [
             self.probe_port_async(ip, port)
             for port in self.config.ports_tcp_probe.keys()
@@ -297,30 +281,29 @@ class AsyncNetworkScanner:
 
         # Выполняем все задачи одновременно
         results = await asyncio.gather(*tasks, return_exceptions=True)
-
+        
         # Обрабатываем результаты
         for result in results:
             if isinstance(result, Exception):
-                self.logger.error(f"Ошибка при сканировании: {result}")
                 continue
                 
-            port, port_result = result
-            if port_result:
-                open_ports[port] = port_result
-                # Определяем ОС по первому найденному баннеру или порту
-                if detected_os is None:
-                    if port_result != "open":
-                        detected_os = self.detect_os_from_banner(port_result, port)
-                    else:
-                        # Если баннер не получен, пробуем определить по порту
-                        detected_os = self.detect_os_from_banner("", port)
+            port, banner = result
+            if banner:
+                open_ports[port] = banner
                 
-                self.logger.debug(f"Порт {port} на {ip}: результат = {port_result}")
+                # Определяем ОС по первому открытому порту
+                if detected_os is None:
+                    detected_os = self.detect_os_from_banner(banner, port)
+
+        # Если ОС не определена, пробуем определить по портам
+        if detected_os is None and open_ports:
+            detected_os = self.detect_os_from_banner("", list(open_ports.keys())[0])
 
         scan_time = time.time() - start_time
+        
         return ScanResult(
-            ip=ip, 
-            open_ports=open_ports, 
+            ip=ip,
+            open_ports=open_ports,
             detected_os=detected_os,
             scan_time=scan_time
         )
@@ -344,24 +327,13 @@ class AsyncNetworkScanner:
             for ip in network_obj.hosts()
         ]
 
-        # Ограничиваем количество одновременных хостов
-        semaphore = asyncio.Semaphore(max_workers)
-        
-        async def scan_host_with_semaphore(host_task):
-            async with semaphore:
-                return await host_task
-
-        # Выполняем сканирование хостов с ограничением
-        results = await asyncio.gather(
-            *[scan_host_with_semaphore(task) for task in host_tasks],
-            return_exceptions=True
-        )
+        # Выполняем все задачи одновременно без ограничений
+        results = await asyncio.gather(*host_tasks, return_exceptions=True)
 
         # Фильтруем результаты
         valid_results = []
         for result in results:
             if isinstance(result, Exception):
-                self.logger.error(f"Ошибка при сканировании хоста: {result}")
                 continue
             if result.open_ports:  # Только хосты с открытыми портами
                 valid_results.append(result)
@@ -373,14 +345,6 @@ class AsyncNetworkScanner:
             f"Асинхронное сканирование завершено. Найдено {len(valid_results)} хостов с открытыми портами"
         )
         
-        # Логируем метрики производительности
-        self.logger.info(f"📊 Метрики производительности:")
-        self.logger.info(f"   • Всего соединений: {self.performance_metrics['total_connections']}")
-        self.logger.info(f"   • Успешных: {self.performance_metrics['successful_connections']}")
-        self.logger.info(f"   • Неудачных: {self.performance_metrics['failed_connections']}")
-        self.logger.info(f"   • Среднее время ответа: {self.performance_metrics['avg_response_time']:.2f}с")
-        self.logger.info(f"   • Оптимальная конкуренция: {self.adaptive_limits['max_concurrent']}")
-        
         return valid_results
 
     # Оставляем старые методы для обратной совместимости
@@ -390,21 +354,73 @@ class AsyncNetworkScanner:
 
     def scan_host(self, ip: str) -> ScanResult:
         """Синхронная версия для обратной совместимости"""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(self.scan_host_async(ip))
-        finally:
-            loop.close()
+        start_time = time.time()
+        self.logger.info(f"Сканирование {ip}")
+
+        open_ports = {}
+        detected_os = None
+
+        # Сканируем все порты синхронно
+        for port in self.config.ports_tcp_probe.keys():
+            banner = self._probe_port_sync(ip, port)
+            if banner:
+                open_ports[port] = banner
+                
+                # Определяем ОС по первому открытому порту
+                if detected_os is None:
+                    detected_os = self.detect_os_from_banner(banner, port)
+
+        # Если ОС не определена, пробуем определить по портам
+        if detected_os is None and open_ports:
+            detected_os = self.detect_os_from_banner("", list(open_ports.keys())[0])
+
+        scan_time = time.time() - start_time
+        
+        return ScanResult(
+            ip=ip,
+            open_ports=open_ports,
+            detected_os=detected_os,
+            scan_time=scan_time
+        )
 
     def scan_network(self, network: str, max_workers: int = 10) -> List[ScanResult]:
         """Синхронная версия для обратной совместимости"""
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        import ipaddress
+        from concurrent.futures import ThreadPoolExecutor
+
         try:
-            return loop.run_until_complete(self.scan_network_async(network, max_workers))
-        finally:
-            loop.close()
+            network_obj = ipaddress.IPv4Network(network, strict=False)
+        except ValueError as e:
+            raise ValueError(f"Неверный формат сети: {e}")
+
+        self.logger.info(
+            f"Начинаем синхронное сканирование сети {network} ({network_obj.num_addresses} адресов)"
+        )
+
+        # Сканируем хосты с использованием ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            host_tasks = [
+                executor.submit(self.scan_host, str(ip))
+                for ip in network_obj.hosts()
+            ]
+            
+            results = []
+            for future in host_tasks:
+                try:
+                    result = future.result()
+                    if result.open_ports:  # Только хосты с открытыми портами
+                        results.append(result)
+                        self.logger.info(
+                            f"Найдены открытые порты на {result.ip}: {list(result.open_ports.keys())}"
+                        )
+                except Exception as e:
+                    self.logger.debug(f"Ошибка при сканировании хоста: {e}")
+
+        self.logger.info(
+            f"Синхронное сканирование завершено. Найдено {len(results)} хостов с открытыми портами"
+        )
+        
+        return results
 
 
 # Оставляем старый класс для обратной совместимости
