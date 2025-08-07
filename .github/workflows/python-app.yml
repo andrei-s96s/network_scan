@@ -72,10 +72,11 @@ jobs:
         python -c "
         import sys
         sys.path.insert(0, '.')
-        from web import Config, validate_network, validate_threads
+        from config import ScannerConfig
+        from main import validate_network, validate_threads
         
         # Test configuration
-        config = Config()
+        config = ScannerConfig()
         assert config.probe_timeout == 5
         
         # Test validation
@@ -88,13 +89,19 @@ jobs:
     - name: Create release artifacts
       run: |
         mkdir -p dist
-        cp web.py dist/
+        cp main.py dist/
+        cp config.py dist/
+        cp network_scanner.py dist/
+        cp screenshot_manager.py dist/
+        cp report_generator.py dist/
         cp requirements.txt dist/
         cp README.md dist/
-        cd dist && tar -czf network-scanner.tar.gz * && cd ..
+        cp VERSION dist/
+        cp RELEASE_NOTES.md dist/
+        cd dist && tar -czf network-scanner-v1.0.0.tar.gz * && cd ..
     
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: network-scanner-build
+        name: network-scanner-v1.0.0
         path: dist/ 
