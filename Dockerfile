@@ -49,6 +49,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-unifont \
     fonts-noto \
     fonts-noto-color-emoji \
+    # Virtual display for Playwright
+    xvfb \
     && rm -rf /var/lib/apt/lists/*
 
 # Создаем рабочую директорию
@@ -93,10 +95,13 @@ EXPOSE 5000
 ENV PYTHONPATH=/app
 ENV FLASK_APP=src.task_web
 ENV FLASK_ENV=production
+# Playwright environment variables for headless mode
+ENV DISPLAY=:99
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/.cache/ms-playwright
 
 # Создаем healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5000/api/health || exit 1
 
-# Команда по умолчанию - запуск веб-интерфейса
-CMD ["python", "-m", "src.task_web"]
+# Команда по умолчанию - запуск веб-интерфейса с виртуальным дисплеем
+CMD ["sh", "-c", "Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 & python -m src.task_web"]
