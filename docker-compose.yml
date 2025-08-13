@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  network-scanner:
+    build: .
+    container_name: network-scanner
+    ports:
+      - "5000:5000"
+    volumes:
+      # Монтируем директории для сохранения результатов
+      - ./results:/app/results
+      - ./logs:/app/logs
+      - ./reports:/app/reports
+      # Монтируем конфигурацию (опционально)
+      - ./config.py:/app/config.py:ro
+    environment:
+      - PYTHONPATH=/app
+      - FLASK_ENV=production
+      - FLASK_APP=src.task_web
+    restart: unless-stopped
+    # Привилегии для сетевого сканирования
+    privileged: true
+    # Сетевые возможности
+    network_mode: host
+    # Ограничения ресурсов
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Опциональный сервис для мониторинга (если нужен)
+  # network-scanner-monitor:
+  #   build: .
+  #   container_name: network-scanner-monitor
+  #   command: ["python", "scripts/task_monitor.py"]
+  #   volumes:
+  #     - ./results:/app/results:ro
+  #   depends_on:
+  #     - network-scanner
+  #   restart: unless-stopped
+
+volumes:
+  results:
+  logs:
+  reports:

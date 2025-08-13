@@ -1,0 +1,29 @@
+# Основные зависимости
+playwright==1.40.0
+tqdm>=4.65.0
+urllib3>=2.0.0
+
+# Разработка и тестирование
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.0
+flake8>=6.0.0
+black>=23.0.0
+mypy>=1.5.0
+
+# Безопасность
+bandit>=1.7.0
+safety>=2.3.0
+
+# Дополнительные утилиты
+click>=8.1.0
+rich>=13.0.0
+colorama==0.4.6
+nest_asyncio>=1.5.8
+psutil==5.9.6
+
+# Веб-интерфейс и управление задачами
+flask==2.3.3
+flask-socketio==5.3.6
+python-socketio==5.8.0
+eventlet>=0.33.0 

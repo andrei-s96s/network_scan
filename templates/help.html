@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Справка - Network Scanner Pro</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="/static/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="/static/style.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <!-- Навигация -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-arrow-left me-2"></i>
+                <i class="fas fa-network-wired me-2"></i>
+                Network Scanner Pro
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text">
+                    <i class="fas fa-question-circle me-1"></i>
+                    Справка
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h2 class="mb-0">
+                            <i class="fas fa-book me-2"></i>
+                            Справка по Network Scanner Pro
+                        </h2>
+                    </div>
+                    <div class="card-body help-section">
+                        <!-- Обзор -->
+                        <section class="mb-5">
+                            <h3 class="text-primary">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Обзор системы
+                            </h3>
+                            <p class="lead">
+                                Network Scanner Pro - это профессиональный инструмент для сканирования сетей, 
+                                который позволяет обнаруживать активные хосты, открытые порты и получать 
+                                детальную информацию о сетевых сервисах.
+                            </p>
+                            <div class="alert alert-info">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Основные возможности:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Сканирование сетей и подсетей</li>
+                                    <li>Обнаружение открытых портов</li>
+                                    <li>Получение баннеров сервисов</li>
+                                    <li>Создание скриншотов веб-страниц</li>
+                                    <li>Генерация подробных отчетов</li>
+                                    <li>Мониторинг системных ресурсов</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Мониторинг системы -->
+                        <section class="mb-5">
+                            <h3 class="text-primary">
+                                <i class="fas fa-tachometer-alt me-2"></i>
+                                Мониторинг системы
+                            </h3>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <h5><i class="fas fa-microchip text-primary me-2"></i>CPU</h5>
+                                            <p class="text-muted">Отображает текущую загрузку процессора в реальном времени.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <h5><i class="fas fa-memory text-success me-2"></i>RAM</h5>
+                                            <p class="text-muted">Показывает использование оперативной памяти.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <h5><i class="fas fa-hdd text-warning me-2"></i>Диск</h5>
+                                            <p class="text-muted">Отображает заполненность дискового пространства.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <h5><i class="fas fa-network-wired text-info me-2"></i>Сеть</h5>
+                                            <p class="text-muted">Показывает текущую скорость сетевого трафика в MB/s.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Создание задач -->
+                        <section class="mb-5">
+                            <h3 class="text-primary">
+                                <i class="fas fa-plus-circle me-2"></i>
+                                Создание задач сканирования
+                            </h3>
+                            <div class="alert alert-success">
+                                <h5><i class="fas fa-check-circle me-2"></i>Как создать задачу:</h5>
+                                <ol>
+                                    <li>Введите сеть в формате CIDR (например: <code>172.30.1.0/24</code>)</li>
+                                    <li>Нажмите кнопку "Создать задачу"</li>
+                                    <li>Задача будет добавлена в очередь и начнет выполняться</li>
+                                </ol>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Поддерживаемые форматы сетей:</h5>
+                                    <ul>
+                                        <li><code>192.168.1.0/24</code> - подсеть класса C (256 адресов)</li>
+                                        <li><code>10.0.0.0/16</code> - подсеть класса B (65536 адресов)</li>
+                                        <li><code>172.30.1.0/28</code> - малая подсеть (16 адресов)</li>
+                                        <li><code>192.168.1.0/30</code> - минимальная подсеть (4 адреса)</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Рекомендации:</h5>
+                                    <ul>
+                                        <li>Начинайте с малых подсетей для тестирования</li>
+                                        <li>Используйте /24 для небольших сетей</li>
+                                        <li>Избегайте сканирования больших сетей без необходимости</li>
+                                        <li>Учитывайте время выполнения при выборе размера сети</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Статусы задач -->
+                        <section class="mb-5">
+                            <h3 class="text-primary">
+                                <i class="fas fa-tasks me-2"></i>
+                                Статусы задач
+                            </h3>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="card border-warning">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                                            <h6>Ожидает</h6>
+                                            <small class="text-muted">Задача в очереди</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border-primary">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+                                            <h6>Выполняется</h6>
+                                            <small class="text-muted">Сканирование активно</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border-success">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                            <h6>Завершено</h6>
+                                            <small class="text-muted">Сканирование окончено</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border-danger">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-exclamation-triangle fa-2x text-danger mb-2"></i>
+                                            <h6>Ошибка</h6>
+                                            <small class="text-muted">Произошла ошибка</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Результаты сканирования -->
+                        <section class="mb-5">
+                            <h3 class="text-primary">
+                                <i class="fas fa-search me-2"></i>
+                                Результаты сканирования
+                            </h3>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Что сканируется:</h5>
+                                    <ul>
+                                        <li><strong>Общие порты:</strong> 21, 22, 23, 25, 53, 80, 110, 143, 443, 993, 995, 8080, 8443</li>
+                                        <li><strong>Обнаружение хостов:</strong> ICMP ping и TCP SYN сканирование</li>
+                                        <li><strong>Баннеры сервисов:</strong> Получение информации о версиях</li>
+                                        <li><strong>Операционные системы:</strong> Определение ОС по ответам</li>
+                                        <li><strong>Веб-сервисы:</strong> Автоматическое создание скриншотов</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Типы отчетов:</h5>
+                                    <ul>
+                                        <li><strong>JSON отчет:</strong> Структурированные данные для анализа</li>
+                                        <li><strong>Текстовый отчет:</strong> Человекочитаемый формат</li>
+                                        <li><strong>Скриншоты:</strong> Изображения веб-страниц</li>
+                                        <li><strong>Архив:</strong> Все результаты в ZIP файле</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Управление задачами -->
+                        <section class="mb-5">
+                            <h3 class="text-primary">
+                                <i class="fas fa-cogs me-2"></i>
+                                Управление задачами
+                            </h3>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Действия с задачами:</h5>
+                                    <ul>
+                                        <li><i class="fas fa-download text-primary me-2"></i><strong>Скачать отчет:</strong> Получить результаты в ZIP архиве</li>
+                                        <li><i class="fas fa-trash text-danger me-2"></i><strong>Удалить задачу:</strong> Очистить историю и файлы</li>
+                                        <li><i class="fas fa-eye text-info me-2"></i><strong>Просмотр прогресса:</strong> Отслеживание выполнения в реальном времени</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Автоматические действия:</h5>
+                                    <ul>
+                                        <li>Автоматическое создание скриншотов для веб-сервисов</li>
+                                        <li>Генерация отчетов по завершении</li>
+                                        <li>Сжатие результатов в архив</li>
+                                        <li>Очистка временных файлов</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Безопасность -->
+                        <section class="mb-5">
+                            <h3 class="text-primary">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                Безопасность и рекомендации
+                            </h3>
+                            <div class="alert alert-warning">
+                                <h5><i class="fas fa-exclamation-triangle me-2"></i>Важно!</h5>
+                                <ul class="mb-0">
+                                    <li>Сканируйте только те сети, на которые у вас есть разрешение</li>
+                                    <li>Некоторые системы могут блокировать сканирование</li>
+                                    <li>Избегайте сканирования производственных сетей в рабочее время</li>
+                                    <li>Используйте результаты только в законных целях</li>
+                                </ul>
+                            </div>
+                        </section>
+
+                        <!-- Техническая информация -->
+                        <section class="mb-5">
+                            <h3 class="text-primary">
+                                <i class="fas fa-code me-2"></i>
+                                Техническая информация
+                            </h3>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Технологии:</h5>
+                                    <ul>
+                                        <li><strong>Backend:</strong> Python, Flask, Socket.IO</li>
+                                        <li><strong>Frontend:</strong> HTML5, CSS3, JavaScript, Bootstrap</li>
+                                        <li><strong>Сканирование:</strong> asyncio, aiohttp</li>
+                                        <li><strong>Скриншоты:</strong> Playwright</li>
+                                        <li><strong>Мониторинг:</strong> psutil</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Производительность:</h5>
+                                    <ul>
+                                        <li>Асинхронное сканирование портов</li>
+                                        <li>Пакетная обработка хостов</li>
+                                        <li>Реальное время обновления статуса</li>
+                                        <li>Оптимизированное использование ресурсов</li>
+                                        <li>Автоматическое управление памятью</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Поддержка -->
+                        <section class="mb-5">
+                            <h3 class="text-primary">
+                                <i class="fas fa-life-ring me-2"></i>
+                                Поддержка
+                            </h3>
+                            <div class="alert alert-info">
+                                <h5><i class="fas fa-info-circle me-2"></i>Если у вас возникли проблемы:</h5>
+                                <ul class="mb-0">
+                                    <li>Проверьте логи в директории <code>logs/</code></li>
+                                    <li>Убедитесь, что у вас есть права на сканирование сети</li>
+                                    <li>Проверьте подключение к интернету</li>
+                                    <li>Перезапустите веб-интерфейс при необходимости</li>
+                                </ul>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

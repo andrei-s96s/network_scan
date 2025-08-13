@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Scanner Pro</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="/static/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="/static/style.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <!-- Навигация -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-network-wired me-2"></i>
+                Network Scanner Pro
+                <a href="/help" class="text-light ms-2" title="Справка" style="text-decoration: none;">
+                    <i class="fas fa-question-circle"></i>
+                </a>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text">
+                    <i class="fas fa-circle text-success me-1"></i>
+                    <span id="connection-status">Подключение...</span>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Статистика системы -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card system-card cpu-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-microchip fa-2x mb-2"></i>
+                        <h5 class="card-title">CPU</h5>
+                        <h3 id="cpu-percent">0%</h3>
+                        <div class="progress">
+                            <div id="cpu-progress" class="progress-bar bg-primary" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card system-card memory-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-memory fa-2x mb-2"></i>
+                        <h5 class="card-title">RAM</h5>
+                        <h3 id="memory-percent">0%</h3>
+                        <div class="progress">
+                            <div id="memory-progress" class="progress-bar bg-success" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card system-card disk-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-hdd fa-2x mb-2"></i>
+                        <h5 class="card-title">Диск</h5>
+                        <h3 id="disk-percent">0%</h3>
+                        <div class="progress">
+                            <div id="disk-progress" class="progress-bar bg-warning" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card system-card network-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-network-wired fa-2x mb-2"></i>
+                        <h5 class="card-title">Сеть</h5>
+                        <h3 id="network-speed">0 MB/s</h3>
+                        <small class="text-muted">Трафик</small>
+                    </div>
+                </div>
+            </div>
+                    </div>
+                    
+        <!-- Создание новой задачи -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            Создать новую задачу
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="create-task-form">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <input type="text" class="form-control" id="network-input" 
+                                           placeholder="Введите сеть для сканирования (например: 172.30.1.0/24)" 
+                                           value="172.30.1.0/24" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="submit" class="btn btn-primary w-100" id="create-task-btn">
+                                        <i class="fas fa-play me-2"></i>Запустить сканирование
+                                    </button>
+                                </div>
+                            </div>
+                </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Список задач -->
+        <div class="row">
+            <div class="col-12">
+        <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>
+                            Задачи
+                        </h5>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="refreshTasks()">
+                            <i class="fas fa-sync-alt me-1"></i>Обновить
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="tasks-container">
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-2x mb-3"></i>
+                                <p>Нет задач для отображения</p>
+                                <p class="small">Создайте новую задачу для начала работы</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для деталей задачи -->
+    <div class="modal fade" id="taskModal" tabindex="-1" role="dialog" aria-labelledby="taskModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="taskModalLabel">Детали задачи</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body" id="task-modal-body">
+                    <!-- Содержимое будет загружено динамически -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                    <button type="button" class="btn btn-success" id="download-report-btn" style="display: none;">
+                        <i class="fas fa-download me-2"></i>Скачать отчет
+                    </button>
+                    <button type="button" class="btn btn-danger" id="delete-task-btn">
+                        <i class="fas fa-trash me-2"></i>Удалить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Уведомления -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="notification-toast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">Network Scanner Pro</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+            </div>
+            <div class="toast-body" id="toast-message">
+                <!-- Сообщение будет загружено динамически -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <!-- Socket.IO -->
+    <script src="/static/js/socket.io.min.js"></script>
+    
+    <script>
+        let socket;
+        let tasks = {};
+        let currentTaskId = null;
+        
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSocket();
+            loadTasks();
+            loadSystemStatus();
+            
+            // Обновляем статус системы каждые 10 секунд
+            setInterval(loadSystemStatus, 10000);
+            
+            // Обновление прогресса задач каждые 2 секунды
+            setInterval(() => {
+                if (Object.keys(tasks).length > 0) {
+                    renderTasks();
+                }
+            }, 2000);
+        });
+        
+        // Функция обновления задач
+        function refreshTasks() {
+            loadTasks();
+            showNotification('Задачи обновлены', 'info');
+        }
+
+        // Инициализация Socket.IO
+        function initializeSocket() {
+            socket = io();
+            
+            socket.on('connect', function() {
+                document.getElementById('connection-status').textContent = 'Подключено';
+                document.getElementById('connection-status').parentElement.querySelector('.fas').className = 'fas fa-circle text-success me-1';
+            });
+            
+            socket.on('disconnect', function() {
+                document.getElementById('connection-status').textContent = 'Отключено';
+                document.getElementById('connection-status').parentElement.querySelector('.fas').className = 'fas fa-circle text-danger me-1';
+            });
+            
+            socket.on('tasks_updated', function(data) {
+                tasks = data.tasks;
+                renderTasks();
+            });
+            
+            socket.on('task_created', function(data) {
+                showNotification('Задача создана успешно!', 'success');
+                loadTasks();
+            });
+            
+            socket.on('task_deleted', function(data) {
+                showNotification('Задача удалена!', 'info');
+                loadTasks();
+            });
+        }
+
+        // Загрузка задач
+        function loadTasks() {
+            fetch('/api/tasks')
+                .then(response => response.json())
+                .then(data => {
+                    tasks = data;
+                    renderTasks();
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки задач:', error);
+                    showNotification('Ошибка загрузки задач', 'error');
+                });
+        }
+
+        // Отрисовка задач
+        function renderTasks() {
+            const container = document.getElementById('tasks-container');
+            
+            // Очищаем контейнер от сообщения "нет задач", если есть задачи
+            if (Object.keys(tasks).length > 0) {
+                const noTasksMessage = container.querySelector('.text-center.text-muted');
+                if (noTasksMessage) {
+                    noTasksMessage.remove();
+                }
+            }
+            
+            if (Object.keys(tasks).length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-2x mb-3"></i>
+                        <p>Нет задач для отображения</p>
+                        <p class="small">Создайте новую задачу для начала работы</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Умное обновление - обновляем только измененные элементы
+            Object.entries(tasks).forEach(([taskId, task]) => {
+                let taskElement = container.querySelector(`[data-task-id="${taskId}"]`);
+                
+                if (!taskElement) {
+                    // Создаем новый элемент, если его нет
+                    console.log('Создаем новый элемент для задачи:', taskId);
+                    taskElement = createTaskElement(taskId, task);
+                    container.appendChild(taskElement);
+                } else {
+                    // Обновляем существующий элемент
+                    console.log('Обновляем существующий элемент для задачи:', taskId);
+                    updateTaskElement(taskElement, taskId, task);
+                }
+            });
+            
+            // Удаляем элементы, которых больше нет в списке
+            const existingTaskIds = Array.from(container.querySelectorAll('[data-task-id]')).map(el => el.getAttribute('data-task-id'));
+            const currentTaskIds = Object.keys(tasks);
+            
+            existingTaskIds.forEach(existingId => {
+                if (!currentTaskIds.includes(existingId)) {
+                    const elementToRemove = container.querySelector(`[data-task-id="${existingId}"]`);
+                    if (elementToRemove) {
+                        elementToRemove.classList.add('removing');
+                        setTimeout(() => {
+                            if (elementToRemove.parentNode) {
+                                elementToRemove.remove();
+                            }
+                        }, 300);
+                    }
+                }
+            });
+        }
+        
+        // Создание элемента задачи
+        function createTaskElement(taskId, task) {
+            const statusClass = getStatusClass(task.status);
+            const statusIcon = getStatusIcon(task.status);
+            const progress = getTaskProgress(task);
+            
+            const taskElement = document.createElement('div');
+            taskElement.className = 'card task-card mb-3 fade-in';
+            taskElement.setAttribute('data-task-id', taskId);
+            
+            taskElement.innerHTML = `
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <h6 class="card-title mb-1">${task.network || 'Неизвестная сеть'}</h6>
+                            <small class="text-muted">ID: ${taskId}</small>
+                        </div>
+                        <div class="col-md-2">
+                            <span class="badge ${statusClass} status-badge">
+                                <i class="${statusIcon} me-1"></i>
+                                ${getStatusText(task.status)}
+                            </span>
+                            ${task.status === 'completed' ? `
+                                <div class="mt-2">
+                                    <button class="btn btn-success btn-sm" 
+                                            onclick="downloadReport('${taskId}')">
+                                        <i class="fas fa-download me-1"></i>Скачать отчет
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="col-md-3">
+                            <div class="task-progress">
+                                <div class="progress-bar ${getProgressClass(task.status)}" 
+                                     style="width: ${progress}%"></div>
+                            </div>
+                            <small class="text-muted">${progress}% завершено</small>
+                        </div>
+                        <div class="col-md-2">
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>
+                                ${formatDuration(task.created_at, task.completed_at)}
+                            </small>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <button class="btn btn-outline-primary btn-sm me-1" 
+                                    onclick="showTaskDetails('${taskId}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm" 
+                                    onclick="deleteTask('${taskId}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return taskElement;
+        }
+        
+        // Обновление элемента задачи
+        function updateTaskElement(taskElement, taskId, task) {
+            const statusClass = getStatusClass(task.status);
+            const statusIcon = getStatusIcon(task.status);
+            const progress = getTaskProgress(task);
+            
+            // Обновляем только изменяющиеся части
+            const statusBadge = taskElement.querySelector('.status-badge');
+            const progressBar = taskElement.querySelector('.progress-bar');
+            
+            // Находим все элементы с текстом прогресса и обновляем их
+            const progressTexts = taskElement.querySelectorAll('small.text-muted');
+            
+            if (statusBadge) {
+                // Плавное обновление статуса
+                statusBadge.style.transition = 'all 0.3s ease';
+                statusBadge.className = `badge ${statusClass} status-badge`;
+                statusBadge.innerHTML = `<i class="${statusIcon} me-1"></i>${getStatusText(task.status)}`;
+            }
+            
+            if (progressBar) {
+                progressBar.className = `progress-bar ${getProgressClass(task.status)}`;
+                progressBar.style.width = `${progress}%`;
+            }
+            
+            // Обновляем все элементы с текстом прогресса
+            progressTexts.forEach(textElement => {
+                const text = textElement.textContent;
+                if (text.includes('% завершено')) {
+                    textElement.textContent = `${progress}% завершено`;
+                }
+            });
+            
+            // Обновляем кнопку скачивания отчета
+            const statusColumn = taskElement.querySelector('.col-md-2');
+            if (statusColumn && task.status === 'completed') {
+                const existingDownloadBtn = statusColumn.querySelector('.btn-success');
+                if (!existingDownloadBtn) {
+                    const downloadBtn = document.createElement('div');
+                    downloadBtn.className = 'mt-2';
+                    downloadBtn.innerHTML = `
+                        <button class="btn btn-success btn-sm" 
+                                onclick="downloadReport('${taskId}')">
+                            <i class="fas fa-download me-1"></i>Скачать отчет
+                        </button>
+                    `;
+                    statusColumn.appendChild(downloadBtn);
+                }
+            }
+            
+            // Обновляем время выполнения
+            const durationText = taskElement.querySelector('.col-md-2 .text-muted');
+            if (durationText) {
+                durationText.innerHTML = `<i class="fas fa-clock me-1"></i>${formatDuration(task.created_at, task.completed_at)}`;
+            }
+        }
+
+        // Получение класса статуса
+        function getStatusClass(status) {
+            switch(status) {
+                case 'pending': return 'bg-warning';
+                case 'running': return 'bg-primary';
+                case 'completed': return 'bg-success';
+                case 'failed': return 'bg-danger';
+                default: return 'bg-secondary';
+            }
+        }
+
+        // Получение иконки статуса
+        function getStatusIcon(status) {
+            switch(status) {
+                case 'pending': return 'fas fa-clock';
+                case 'running': return 'fas fa-spinner fa-spin';
+                case 'completed': return 'fas fa-check';
+                case 'failed': return 'fas fa-times';
+                default: return 'fas fa-question';
+            }
+        }
+
+        // Получение текста статуса
+        function getStatusText(status) {
+            switch(status) {
+                case 'pending': return 'Ожидает';
+                case 'running': return 'Выполняется';
+                case 'completed': return 'Завершено';
+                case 'failed': return 'Ошибка';
+                default: return 'Неизвестно';
+            }
+        }
+
+        // Получение прогресса задачи
+        function getTaskProgress(task) {
+            if (task.status === 'completed') return 100;
+            if (task.status === 'failed') return 100;
+            if (task.status === 'running') {
+                // Рассчитываем прогресс на основе времени выполнения
+                if (task.started_at) {
+                    try {
+                        let start;
+                        
+                        // Парсим дату в ISO формате
+                        start = new Date(task.started_at);
+                        
+                        if (isNaN(start.getTime())) {
+                            console.error('Ошибка парсинга даты для прогресса:', task.started_at);
+                            return 25; // Базовый прогресс
+                        }
+                        
+                        const now = new Date();
+                        const elapsed = (now - start) / 1000; // секунды
+                        
+                        // Примерное время выполнения сканирования (5 минут)
+                        const estimatedDuration = 300;
+                        const progress = Math.min(Math.floor((elapsed / estimatedDuration) * 100), 95);
+                        return Math.max(progress, 5); // Минимум 5%
+                    } catch (error) {
+                        console.error('Ошибка расчета прогресса:', error);
+                        return 25; // Базовый прогресс
+                    }
+                }
+                return 25; // Базовый прогресс для выполняющихся задач
+            }
+            return 0;
+        }
+
+        // Получение класса прогресса
+        function getProgressClass(status) {
+            switch(status) {
+                case 'completed': return 'bg-success';
+                case 'failed': return 'bg-danger';
+                case 'running': return 'bg-primary';
+                default: return 'bg-secondary';
+            }
+        }
+
+                // Форматирование длительности
+        function formatDuration(startTime, endTime) {
+            if (!startTime) return 'Неизвестно';
+            
+            try {
+                const start = new Date(startTime);
+                const end = endTime ? new Date(endTime) : new Date();
+                
+                if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                    console.error('Ошибка парсинга дат:', { startTime, endTime, start, end });
+                    return 'Неизвестно';
+                }
+                
+                const diff = Math.floor((end - start) / 1000);
+                
+                if (diff < 0) return '0с';
+                if (diff < 60) return `${diff}с`;
+                if (diff < 3600) return `${Math.floor(diff / 60)}м`;
+                return `${Math.floor(diff / 3600)}ч ${Math.floor((diff % 3600) / 60)}м`;
+            } catch (error) {
+                console.error('Ошибка форматирования времени:', error);
+                return 'Неизвестно';
+            }
+        }
+
+        // Форматирование даты/времени
+        function formatDateTime(dateTime) {
+            if (!dateTime) return 'Неизвестно';
+            
+            try {
+                const date = new Date(dateTime);
+                
+                if (isNaN(date.getTime())) {
+                    console.error('Ошибка парсинга даты:', { dateTime, date });
+                    return 'Неизвестно';
+                }
+                
+                return date.toLocaleString('ru-RU', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            } catch (error) {
+                console.error('Ошибка форматирования даты:', error);
+                return 'Неизвестно';
+            }
+        }
+
+        // Форматирование результатов сканирования
+        function formatScanResults(metadata) {
+            if (!metadata || Object.keys(metadata).length === 0) {
+                return '<p class="text-muted">Нет данных о результатах</p>';
+            }
+
+            let html = '<div class="bg-light p-3 rounded">';
+            
+            // Основная статистика
+            if (metadata.hosts_count !== undefined) {
+                html += `<p><strong>Найдено хостов:</strong> ${metadata.hosts_count}</p>`;
+            }
+            
+            if (metadata.web_hosts_count !== undefined) {
+                html += `<p><strong>Веб-сервисов:</strong> ${metadata.web_hosts_count}</p>`;
+            }
+            
+            if (metadata.screenshots_count !== undefined) {
+                html += `<p><strong>Скриншотов создано:</strong> ${metadata.screenshots_count}</p>`;
+            }
+
+            // Показываем только количество результатов без деталей
+            if (metadata.scan_results && Array.isArray(metadata.scan_results)) {
+                html += `<p class="text-muted"><small>Подробные результаты доступны в скачанном отчете</small></p>`;
+            }
+            
+            html += '</div>';
+            return html;
+        }
+
+        // Скачивание отчета
+        function downloadReport(taskId) {
+            window.open(`/api/tasks/${taskId}/download`, '_blank');
+        }
+
+        // Загрузка статуса системы
+        function loadSystemStatus() {
+            fetch('/api/system/status')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('cpu-percent').textContent = `${data.cpu_percent}%`;
+                    document.getElementById('memory-percent').textContent = `${data.memory_percent}%`;
+                    document.getElementById('disk-percent').textContent = `${data.disk_percent}%`;
+                    
+                    document.getElementById('cpu-progress').style.width = `${data.cpu_percent}%`;
+                    document.getElementById('memory-progress').style.width = `${data.memory_percent}%`;
+                    document.getElementById('disk-progress').style.width = `${data.disk_percent}%`;
+                    
+                    // Обновляем сетевую статистику
+                    const networkSpeed = data.network_speed || 0;
+                    document.getElementById('network-speed').textContent = `${networkSpeed.toFixed(1)} MB/s`;
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки статуса системы:', error);
+                });
+        }
+
+        // Создание задачи
+        document.getElementById('create-task-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const network = document.getElementById('network-input').value.trim();
+            if (!network) {
+                showNotification('Введите сеть для сканирования', 'error');
+                return;
+            }
+            
+            const btn = document.getElementById('create-task-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Создание...';
+            
+            fetch('/api/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ network: network })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    document.getElementById('network-input').value = '172.30.1.0/24';
+                } else {
+                    showNotification(data.error || 'Ошибка создания задачи', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка создания задачи:', error);
+                showNotification('Ошибка создания задачи', 'error');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-play me-2"></i>Запустить сканирование';
+            });
+        });
+
+        // Показать детали задачи
+        function showTaskDetails(taskId) {
+            const task = tasks[taskId];
+            if (!task) return;
+            
+            currentTaskId = taskId;
+            
+            const modalBody = document.getElementById('task-modal-body');
+            modalBody.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Основная информация</h6>
+                        <p><strong>ID:</strong> ${taskId}</p>
+                        <p><strong>Сеть:</strong> ${task.network || 'Неизвестно'}</p>
+                        <p><strong>Статус:</strong> 
+                            <span class="badge ${getStatusClass(task.status)}">
+                                ${getStatusText(task.status)}
+                            </span>
+                        </p>
+                        <p><strong>Создана:</strong> ${formatDateTime(task.created_at)}</p>
+                        ${task.started_at ? `<p><strong>Начата:</strong> ${formatDateTime(task.started_at)}</p>` : ''}
+                        ${task.completed_at ? `<p><strong>Завершена:</strong> ${formatDateTime(task.completed_at)}</p>` : ''}
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Результаты сканирования</h6>
+                        ${formatScanResults(task.metadata || {})}
+                    </div>
+                </div>
+            `;
+            
+            // Показываем/скрываем кнопки в зависимости от статуса
+            const deleteBtn = document.getElementById('delete-task-btn');
+            const downloadBtn = document.getElementById('download-report-btn');
+            
+            deleteBtn.style.display = 'inline-block';
+            downloadBtn.style.display = task.status === 'completed' ? 'inline-block' : 'none';
+            
+            // Показываем модальное окно
+            const modal = new bootstrap.Modal(document.getElementById('taskModal'));
+            modal.show();
+            
+            // Управление фокусом для доступности
+            const modalElement = document.getElementById('taskModal');
+            modalElement.addEventListener('shown.bs.modal', function() {
+                const closeBtn = modalElement.querySelector('.btn-close');
+                if (closeBtn) {
+                    closeBtn.focus();
+                }
+            });
+        }
+
+        // Удаление задачи
+        function deleteTask(taskId) {
+            if (!confirm('Вы уверены, что хотите удалить эту задачу?')) return;
+            
+            fetch(`/api/tasks/${taskId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Задача удалена успешно', 'success');
+                    loadTasks();
+                } else {
+                    showNotification(data.error || 'Ошибка удаления задачи', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка удаления задачи:', error);
+                showNotification('Ошибка удаления задачи', 'error');
+            });
+        }
+
+        // Скачивание отчета
+        document.getElementById('download-report-btn').addEventListener('click', function() {
+            if (!currentTaskId) return;
+            
+            window.open(`/api/tasks/${currentTaskId}/download`, '_blank');
+        });
+
+        // Удаление задачи из модального окна
+        document.getElementById('delete-task-btn').addEventListener('click', function() {
+            if (!currentTaskId) return;
+            
+            deleteTask(currentTaskId);
+            bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
+        });
+
+        // Обновление задач
+        function refreshTasks() {
+            loadTasks();
+            showNotification('Список задач обновлен', 'info');
+        }
+
+        // Показать уведомление
+        function showNotification(message, type = 'info') {
+            const toast = document.getElementById('notification-toast');
+            const toastBody = document.getElementById('toast-message');
+            
+            toastBody.textContent = message;
+            
+            // Устанавливаем цвет в зависимости от типа
+            toast.className = `toast ${type === 'error' ? 'bg-danger text-white' : ''}`;
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+        }
+
+        // Форматирование даты и времени
+        function formatDateTime(dateString) {
+            if (!dateString) return 'Неизвестно';
+            return new Date(dateString).toLocaleString('ru-RU');
+        }
+    </script>
+</body>
+</html>
