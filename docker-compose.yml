@@ -7,22 +7,22 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      # Монтируем директории для сохранения результатов
+      # Mount directories for results
       - ./results:/app/results
       - ./logs:/app/logs
       - ./reports:/app/reports
-      # Монтируем конфигурацию (опционально)
+      # Mount configuration (optional)
       - ./config.py:/app/config.py:ro
     environment:
       - PYTHONPATH=/app
       - FLASK_ENV=production
       - FLASK_APP=src.task_web
     restart: unless-stopped
-    # Привилегии для сетевого сканирования
+    # Privileges for network scanning
     privileged: true
-    # Сетевые возможности
+    # Network capabilities
     network_mode: host
-    # Ограничения ресурсов
+    # Resource limits
     deploy:
       resources:
         limits:
@@ -38,17 +38,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-  # Опциональный сервис для мониторинга (если нужен)
-  # network-scanner-monitor:
-  #   build: .
-  #   container_name: network-scanner-monitor
-  #   command: ["python", "scripts/task_monitor.py"]
-  #   volumes:
-  #     - ./results:/app/results:ro
-  #   depends_on:
-  #     - network-scanner
-  #   restart: unless-stopped
 
 volumes:
   results:
