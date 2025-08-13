@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   network-scanner:
-    build: .
+    image: andreis1s/net_scan:latest
     container_name: network-scanner
     ports:
       - "5000:5000"
