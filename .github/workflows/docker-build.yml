@@ -1,11 +1,15 @@
 name: Docker Build and Push
 
+# Триггеры:
+# - develop: для тестирования новых функций
+# - v* теги: для релизов
+# - PR: для проверки кода
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ develop ]
     tags: [ 'v*' ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 env:
   REGISTRY: docker.io
@@ -43,6 +47,7 @@ jobs:
           type=ref,event=pr
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
+          type=raw,value=latest,enable={{is_default_branch}}
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
