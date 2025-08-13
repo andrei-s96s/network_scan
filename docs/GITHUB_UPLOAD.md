@@ -28,7 +28,7 @@ git config --global --list
 
 ```bash
 # Добавить remote origin
-git remote add origin https://github.com/andreis1s/network-scanner.git
+git remote add origin https://github.com/andrei-s96s/network_scan.git
 
 # Проверить remote
 git remote -v
@@ -76,7 +76,7 @@ git config --global user.name "Andrei Sych"
 git config --global user.email "andrei.sych69@gmail.com"
 
 # 2. Подключение к GitHub
-git remote add origin https://github.com/andreis1s/network-scanner.git
+git remote add origin https://github.com/andrei-s96s/network_scan.git
 
 # 3. Загрузка кода
 git push -u origin main

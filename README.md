@@ -173,9 +173,9 @@ mypy src/
 
 ## 🔗 Ссылки
 
-- **GitHub**: https://github.com/andreis1s/network-scanner
+- **GitHub**: https://github.com/andrei-s96s/network_scan
 - **Docker Hub**: https://hub.docker.com/r/andreis1s/net_scan
-- **Issues**: https://github.com/andreis1s/network-scanner/issues
+- **Issues**: https://github.com/andrei-s96s/network_scan/issues
 - **Documentation**: [docs/](docs/)
 
 ## 📈 Статистика

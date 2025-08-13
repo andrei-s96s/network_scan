@@ -43,10 +43,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/andreis1s/network-scanner"
-Documentation = "https://github.com/andreis1s/network-scanner#readme"
-Repository = "https://github.com/andreis1s/network-scanner"
-Issues = "https://github.com/andreis1s/network-scanner/issues"
+Homepage = "https://github.com/andrei-s96s/network_scan"
+Documentation = "https://github.com/andrei-s96s/network_scan#readme"
+Repository = "https://github.com/andrei-s96s/network_scan"
+Issues = "https://github.com/andrei-s96s/network_scan/issues"
 Docker = "https://hub.docker.com/r/andreis1s/net_scan"
 
 [build-system]
